@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>The Malabar Expedition — a scripted voyage in nine beats, each one a checkpoint.</summary>
-public class Story : MonoBehaviour
+public partial class Story : MonoBehaviour
 {
     public static Story I;
     public int Step;
@@ -27,13 +27,14 @@ public class Story : MonoBehaviour
 
     IEnumerator Run(int step, bool restart)
     {
-        for (int s = step; s <= 8; s++)
+        int last = G.Chapter == 2 ? 6 : 8;
+        for (int s = step; s <= last; s++)
         {
             Step = s;
             G.Checkpoint = s;
-            yield return Beat(s, restart && s == step);
+            yield return G.Chapter == 2 ? Beat2(s, restart && s == step) : Beat(s, restart && s == step);
         }
-        yield return Ending();
+        yield return G.Chapter == 2 ? Ending2() : Ending();
     }
 
     IEnumerator Beat(int s, bool restart)
@@ -436,7 +437,7 @@ public class Story : MonoBehaviour
                        "<color=#7fe8e0>TO BE CONTINUED IN CHAPTER II</color>";
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        yield return H.PlayEnding(text, stats);
+        yield return H.PlayEnding(text, stats, "CONTINUE TO CHAPTER II", () => G.LoadChapter(2));
     }
 }
 

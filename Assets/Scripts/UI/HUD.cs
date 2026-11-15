@@ -66,6 +66,11 @@ public class HUD : MonoBehaviour
     public Vector3? MarkerTarget;
     public string MarkerLabel = "";
     public Ship EnemyTarget;
+    public string EnemyName = "CARTOGRAPHER RAIDER";
+    public bool ShowStealth;
+    CanvasGroup stealthGroup; Image stealthFill; Text stealthLabel, lanternLabel;
+    Button endNext;
+    System.Action endNextAction;
     public bool ShowReticle;
     public Vector3 ReticleWorld;
     public float ReloadFrac = 1f;
@@ -299,6 +304,21 @@ public class HUD : MonoBehaviour
         enemyFill.type = Image.Type.Filled;
         enemyFill.fillMethod = Image.FillMethod.Horizontal;
 
+        var sr = UIKit.Rect(hud, "Stealth");
+        UIKit.Place(sr, 0.5f, 1f, 0.5f, 1f, 0, -100, 520, 80);
+        stealthGroup = sr.gameObject.AddComponent<CanvasGroup>();
+        stealthGroup.alpha = 0;
+        stealthLabel = UIKit.Txt(sr, "Label", "", 20, UIKit.Teal, TextAnchor.MiddleCenter, FontStyle.Bold);
+        UIKit.Place(stealthLabel.rectTransform, 0.5f, 1f, 0.5f, 1f, 0, 0, 520, 26);
+        var sbg = UIKit.Img(sr, "Bg", ProcTex.Square, new Color(0, 0, 0, 0.6f));
+        UIKit.Place(sbg.rectTransform, 0.5f, 1f, 0.5f, 1f, 0, -30, 360, 10);
+        stealthFill = UIKit.Img(sr, "Fill", ProcTex.Square, UIKit.Red);
+        UIKit.Place(stealthFill.rectTransform, 0.5f, 1f, 0.5f, 1f, 0, -30, 360, 10);
+        stealthFill.type = Image.Type.Filled;
+        stealthFill.fillMethod = Image.FillMethod.Horizontal;
+        lanternLabel = UIKit.Txt(sr, "Lantern", "", 17, UIKit.Parch, TextAnchor.MiddleCenter, FontStyle.Italic);
+        UIKit.Place(lanternLabel.rectTransform, 0.5f, 1f, 0.5f, 1f, 0, -52, 520, 24);
+
         reticle = UIKit.Rect(hud, "Reticle");
         UIKit.Place(reticle, 0.5f, 0.5f, 0.5f, 0.5f, 0, 0, 70, 70);
         reticleRing = UIKit.Img(reticle, "Ring", ProcTex.RingThin, new Color(1f, 0.75f, 0.4f, 0.8f));
@@ -465,14 +485,18 @@ public class HUD : MonoBehaviour
         UIKit.Place((RectTransform)tut.transform, 0f, 0.5f, 0f, 0.5f, 140, -186, 320, 54);
         var tutNote = UIKit.Txt(title.transform, "TutNote", "guided lessons  ·  learn every control and win", 16, UIKit.Teal, TextAnchor.MiddleLeft, FontStyle.Italic);
         UIKit.Place(tutNote.rectTransform, 0f, 0.5f, 0f, 0.5f, 476, -186, 520, 30);
+        var ch2 = UIKit.Btn(title.transform, "CHAPTER II  ·  THE GATE OF TEARS", 18, () => Game.I.LoadChapter(2));
+        UIKit.Place((RectTransform)ch2.transform, 0f, 0.5f, 0f, 0.5f, 140, -252, 320, 54);
+        var ch2Note = UIKit.Txt(title.transform, "Ch2Note", "the story continues  ·  stealth, fog and a flagship", 16, UIKit.Gold, TextAnchor.MiddleLeft, FontStyle.Italic);
+        UIKit.Place(ch2Note.rectTransform, 0f, 0.5f, 0f, 0.5f, 476, -252, 520, 30);
         var ctr = UIKit.Btn(title.transform, UIKit.Spaced("CONTROLS"), 20, () => ShowControls(true));
-        UIKit.Place((RectTransform)ctr.transform, 0f, 0.5f, 0f, 0.5f, 140, -252, 320, 50);
+        UIKit.Place((RectTransform)ctr.transform, 0f, 0.5f, 0f, 0.5f, 140, -318, 320, 50);
         var qb = UIKit.Btn(title.transform, "GRAPHICS: HIGH", 20, null);
         qb.onClick.AddListener(() => { Game.I.ToggleQuality(); UIKit.SetLabel(qb, "GRAPHICS: " + (Game.I.HighQuality ? "HIGH" : "PERFORMANCE")); });
-        UIKit.Place((RectTransform)qb.transform, 0f, 0.5f, 0f, 0.5f, 140, -314, 320, 50);
+        UIKit.Place((RectTransform)qb.transform, 0f, 0.5f, 0f, 0.5f, 140, -380, 320, 50);
 
         var newbie = UIKit.Txt(title.transform, "Newbie", "First time playing?  Choose  TUTORIAL VOYAGE  — it teaches every button as you go.", 20, UIKit.Teal, TextAnchor.MiddleLeft, FontStyle.Bold);
-        UIKit.Place(newbie.rectTransform, 0f, 0.5f, 0f, 0.5f, 140, -380, 1200, 30);
+        UIKit.Place(newbie.rectTransform, 0f, 0.5f, 0f, 0.5f, 140, -436, 1200, 30);
         var foot = UIKit.Txt(title.transform, "Foot", "GitHub Game Off 2026  ·  Theme: SHIFT  ·  Made with Unity 6  ·  every model, texture, sound and note generated in code", 16, UIKit.Muted, TextAnchor.MiddleLeft);
         UIKit.Place(foot.rectTransform, 0f, 0f, 0f, 0f, 140, 40, 1600, 26);
     }
@@ -614,7 +638,7 @@ public class HUD : MonoBehaviour
             UIKit.Place(price.rectTransform, 0.5f, 0.5f, 0.5f, 0.5f, 150, 0, 160, 40);
             if (m.CanBuy)
             {
-                var west = UIKit.Txt(row, "West", "worth ~" + c.WestPrice + " g in the west", 15, UIKit.Teal, TextAnchor.MiddleCenter, FontStyle.Italic);
+                var west = UIKit.Txt(row, "West", "worth ~" + c.WestPrice + " g " + m.WestLabel, 15, UIKit.Teal, TextAnchor.MiddleCenter, FontStyle.Italic);
                 UIKit.Place(west.rectTransform, 0.5f, 0.5f, 0.5f, 0.5f, 150, -30, 220, 22);
             }
             var held = UIKit.Txt(row, "Held", "", 28, UIKit.Parch, TextAnchor.MiddleCenter, FontStyle.Bold);
@@ -698,6 +722,18 @@ public class HUD : MonoBehaviour
             UIKit.Place(t.rectTransform, 0f, 0f, 0.5f, 0.5f, pos.x, pos.y + 34, 300, 30);
             chartLabels.Add((t, key));
         }
+        if (Game.I != null && Game.I.Chapter == 2)
+        {
+            KnownPlaces = new HashSet<string> { "ras", "arabia", "azania", "aden", "gate", "redsea", "fog" };
+            Label("ras", "Ras al-Mira", World.P("dock_ras") + new Vector3(0, 0, 150), 22);
+            Label("arabia", "ARABIA", new Vector3(-200, 0, 800), 30);
+            Label("azania", "AZANIA", new Vector3(-1200, 0, -800), 30);
+            Label("fog", "Reefs of the Fog", new Vector3(330, 0, -60));
+            Label("aden", "Aden", World.P("dock_aden") + new Vector3(-120, 0, 120), 24);
+            Label("gate", "Gate of Tears", new Vector3(-1700, 0, -260), 22);
+            Label("redsea", "RED SEA", new Vector3(-2450, 0, 700), 26);
+            return;
+        }
         Label("muziris", "Muziris", World.P("dock_muziris") + new Vector3(140, 0, 0), 24);
         Label("malabar", "MALABAR", new Vector3(650, 0, 500), 30);
         Label("cape", "Cape of Lanterns", World.P("cape"));
@@ -776,13 +812,18 @@ public class HUD : MonoBehaviour
         endStats = UIKit.Txt(ending.transform, "Stats", "", 20, UIKit.Gold, TextAnchor.UpperLeft, FontStyle.Bold);
         UIKit.Place(endStats.rectTransform, 0.5f, 0.5f, 0f, 0.5f, 40, -140, 760, 200);
         var b = UIKit.Btn(ending.transform, UIKit.Spaced("SAIL AGAIN"), 22, () => Game.I.Restart());
-        UIKit.Place((RectTransform)b.transform, 0.5f, 0f, 0.5f, 0f, 0, 60, 320, 60);
-        var credit = UIKit.Txt(ending.transform, "Credit", "THE SPICE ROUTE: ACROSS SEVEN SEAS  ·  Chapter I  ·  A Game Off 2026 entry  ·  Thank you for playing", 16, UIKit.Muted, TextAnchor.MiddleCenter);
+        UIKit.Place((RectTransform)b.transform, 0.5f, 0f, 0.5f, 0f, -190, 60, 340, 60);
+        endNext = UIKit.Btn(ending.transform, "NEXT", 22, () => endNextAction?.Invoke());
+        UIKit.Place((RectTransform)endNext.transform, 0.5f, 0f, 0.5f, 0f, 190, 60, 340, 60);
+        var credit = UIKit.Txt(ending.transform, "Credit", "THE SPICE ROUTE: ACROSS SEVEN SEAS  ·  A Game Off 2026 entry  ·  Thank you for playing", 16, UIKit.Muted, TextAnchor.MiddleCenter);
         UIKit.Place(credit.rectTransform, 0.5f, 0f, 0.5f, 0f, 0, 20, 1600, 26);
     }
 
-    public IEnumerator PlayEnding(string text, string stats)
+    public IEnumerator PlayEnding(string text, string stats, string nextLabel = null, System.Action next = null)
     {
+        endNextAction = next;
+        endNext.gameObject.SetActive(next != null);
+        if (nextLabel != null) UIKit.SetLabel(endNext, UIKit.Spaced(nextLabel));
         EndingOpen = true;
         var parch = ending.transform.Find("Parch").GetComponent<RawImage>();
         parch.texture = Mats.Parchment;
@@ -1042,6 +1083,7 @@ public class HUD : MonoBehaviour
             bool vis = PlaceOnScreen(enemyBar, EnemyTarget.transform.position + Vector3.up * 17f, false, out bool front);
             enemyBar.gameObject.SetActive(vis && front);
             enemyFill.fillAmount = EnemyTarget.HP / EnemyTarget.MaxHP;
+            enemyName.text = EnemyName;
         }
         else enemyBar.gameObject.SetActive(false);
 
@@ -1053,6 +1095,17 @@ public class HUD : MonoBehaviour
         }
         else reticle.gameObject.SetActive(false);
 
+        stealthGroup.alpha = Mathf.MoveTowards(stealthGroup.alpha, ShowStealth && !ModalOpen ? 1f : 0f, dt * 3f);
+        if (ShowStealth && Stealth.I != null)
+        {
+            var st = Stealth.I;
+            stealthFill.fillAmount = st.Detection;
+            stealthFill.color = Color.Lerp(UIKit.Gold, UIKit.Red, st.Detection);
+            stealthLabel.text = st.Spotted ? "SPOTTED!" : st.InLight ? "IN THE LIGHT OF A " + st.Source.ToUpperInvariant() + "  ·  GET OUT!" : (st.Detection > 0.05f ? "THEY ARE LOOKING..." : "UNSEEN");
+            stealthLabel.color = st.Spotted || st.InLight ? UIKit.Red : UIKit.Teal;
+            lanternLabel.text = ship.LanternOn ? "Your lantern is LIT  ·  press L to douse it" : "Lantern dark  ·  you are hard to see";
+            lanternLabel.color = ship.LanternOn ? UIKit.Gold : UIKit.Parch;
+        }
         clickToSteer.gameObject.SetActive(g.State == Game.GameState.Sailing && !ModalOpen && Cursor.lockState != CursorLockMode.Locked && g.WantsLock && !g.BotControl);
     }
 

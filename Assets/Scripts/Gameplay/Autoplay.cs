@@ -19,6 +19,7 @@ public class Autoplay : MonoBehaviour
     readonly List<string> issues = new List<string>();
     float hudMissing;
     readonly float[] limits = { 150, 150, 420, 420, 360, 360, 600, 480, 360 };
+    readonly float[] limits2 = { 150, 150, 420, 300, 480, 300, 480 };
 
     static Game G => Game.I;
 
@@ -55,7 +56,7 @@ public class Autoplay : MonoBehaviour
         yield return new WaitForSecondsRealtime(3f);
         Shot("title");
         yield return new WaitForSecondsRealtime(0.5f);
-        Log("Starting " + (tutorial ? "TUTORIAL VOYAGE" : "normal voyage"));
+        Log("Starting " + (G.Chapter == 2 ? "CHAPTER II" : tutorial ? "TUTORIAL VOYAGE" : "normal voyage"));
         G.StartFromBot(tutorial);
     }
 
@@ -82,10 +83,11 @@ public class Autoplay : MonoBehaviour
             stepTime = 0;
         }
         stepTime += Time.deltaTime;
-        if (s >= 0 && s < limits.Length && stepTime > limits[s] && G.State == Game.GameState.Sailing)
+        var lim = G.Chapter == 2 ? limits2 : limits;
+        if (s >= 0 && s < lim.Length && stepTime > lim[s] && G.State == Game.GameState.Sailing)
         {
             issues.Add("STUCK in step " + s + " (objective: " + Objective() + ")");
-            Log("STUCK in step " + s + " after " + limits[s] + "s; objective '" + Objective() + "'. Skipping ahead.");
+            Log("STUCK in step " + s + " after " + lim[s] + "s; objective '" + Objective() + "'. Skipping ahead.");
             Shot("stuck_step" + s);
             stepTime = 0;
             G.DevJump((s + 1).ToString());
@@ -117,10 +119,11 @@ public class Autoplay : MonoBehaviour
         var m = G.Market;
         if (m.CanBuy)
         {
-            while (m.Buy(1)) { if (m.Gold < 80) break; }
-            while (m.Buy(0)) { }
-            while (m.Buy(1)) { }
-            Log("Bought " + m.Items[0].Held + " pepper, " + m.Items[1].Held + " cardamom, " + m.Items[2].Held + " cinnamon; gold left " + m.Gold);
+            var order = new List<int> { 0, 1, 2 };
+            order.Sort((a, b) => (m.Items[b].WestPrice - m.BuyCost(b)).CompareTo(m.Items[a].WestPrice - m.BuyCost(a)));
+            foreach (int i in order) { while (m.Buy(i)) { if (m.Gold < 60 && i == order[0]) break; } }
+            foreach (int i in order) while (m.Buy(i)) { }
+            Log("Bought " + m.Items[0].Held + " " + m.Items[0].Name + ", " + m.Items[1].Held + " " + m.Items[1].Name + ", " + m.Items[2].Held + " " + m.Items[2].Name + "; gold left " + m.Gold);
         }
         else
         {
@@ -142,7 +145,7 @@ public class Autoplay : MonoBehaviour
         yield return new WaitForSecondsRealtime(14f);
         Shot("ending_screen");
         int profit = Mathf.RoundToInt(G.Market.Earned - G.Market.Spent);
-        Log("RESULT  time " + G.PlayTime.ToString("0") + "s  profit " + profit + "  stones " + Story.I.Stones + "  raider " + (Story.I.RaiderSunk ? "sunk" : "outrun") + "  hull " + Mathf.RoundToInt(G.Player.HP));
+        Log("RESULT  chapter " + G.Chapter + "  time " + G.PlayTime.ToString("0") + "s  profit " + profit + "  echoes " + Story.I.Stones + "  raider " + (Story.I.RaiderSunk ? "sunk" : "outrun") + (G.Chapter == 2 ? "  gate " + (Story.I.Unseen ? "unseen" : "spotted") + "  flagship " + (Story.I.FlagshipSunk ? "sunk" : "escaped") : "") + "  hull " + Mathf.RoundToInt(G.Player.HP));
         Log(issues.Count == 0 ? "NO ISSUES" : "ISSUES:\n  " + string.Join("\n  ", issues));
         yield return new WaitForSecondsRealtime(1f);
         Application.Quit();
@@ -157,9 +160,11 @@ public class Autoplay : MonoBehaviour
         float rud = 0;
         var era = EraShift.I;
         Vector3? m = HUD.I.MarkerTarget;
-        var raider = G.Raider;
+        var raider = G.CurrentEnemy;
+        bool ch2 = G.Chapter == 2;
+        bool stealth = ch2 && Stealth.I != null && Stealth.I.Active && !Stealth.I.Spotted;
 
-        if (G.CombatEnabled && raider != null && raider.gameObject.activeInHierarchy && !raider.Dead)
+        if (G.CombatEnabled && raider != null && !stealth)
         {
             Vector3 to = raider.Planar - p.Planar;
             float d = to.magnitude;
@@ -180,25 +185,34 @@ public class Autoplay : MonoBehaviour
         {
             rud = G.BotRudder(m.Value);
             float dist = Vector3.Distance(new Vector3(m.Value.x, 0, m.Value.z), p.Planar);
-            if ((s == 1 || s == 8) && dist < 90f) sail = dist < 45f ? 0 : 1;
-            if (s == 3) sail = 2;
-            if (s == 6)
+            bool docking = ch2 ? (s == 1 || s == 3) : (s == 1 || s == 8);
+            if (docking && dist < 90f) sail = dist < 45f ? 0 : 1;
+            if (!ch2 && s == 3) sail = 2;
+            if ((!ch2 && s == 6) || (ch2 && s == 5))
             {
                 if (dist < 120f) sail = 1;
                 if (dist < 75f) sail = 0;
             }
-            if (s == 7) sail = 2;
+            if (!ch2 && s == 7) sail = 2;
+            if (ch2 && s == 2 && SkyController.I.FogMul > 2f) sail = 2;
+            if (stealth)
+            {
+                if (p.LanternOn) p.SetLantern(false);
+                sail = Stealth.I.InLight ? 3 : 2;
+            }
         }
         else sail = 0;
 
-        if (s == 6 && era.Unlocked)
+        int readStep = ch2 ? 5 : 6;
+        if (ch2 && s == 2 && SkyController.I.FogMul > 2f && !era.Active && era.Energy > 0.5f) era.Toggle();
+        if (s == readStep && era.Unlocked)
         {
             bool reading = !string.IsNullOrEmpty(HUD.I.Reading);
             if (era.Activations == 0) era.Toggle();
             else if (reading && !era.Active && era.Energy > 0.15f) era.Toggle();
             else if (!reading && era.Active && era.Energy < 0.9f) era.Deactivate();
         }
-        if (s == 7 && !era.Active && era.Energy > 0.7f) era.Toggle();
+        if (!ch2 && s == 7 && !era.Active && era.Energy > 0.7f) era.Toggle();
 
         if (G.InInteractRange && p.Speed < 6f) G.TryInteract();
 

@@ -20,6 +20,25 @@ public class Ship : MonoBehaviour
     public float TurnMul = 1f;
     public float FireDamage = 0.7f;
     public float DamageTaken = 1f;
+    public bool LanternOn = true;
+    Light lanternPoint;
+
+    public void SetLantern(bool on)
+    {
+        LanternOn = on;
+        if (P != null && P.lanternLight != null) P.lanternLight.gameObject.SetActive(on);
+        if (lanternPoint == null && P != null && P.lanternLight != null && IsPlayer)
+        {
+            lanternPoint = new GameObject("LanternLight").AddComponent<Light>();
+            lanternPoint.transform.SetParent(P.lanternLight.parent, false);
+            lanternPoint.transform.position = P.lanternLight.GetComponent<Renderer>().bounds.center;
+            lanternPoint.type = LightType.Point;
+            lanternPoint.color = new Color(1f, 0.65f, 0.3f);
+            lanternPoint.range = 22f;
+            lanternPoint.shadows = LightShadows.None;
+        }
+        if (lanternPoint != null) { lanternPoint.enabled = on; lanternPoint.intensity = (SkyController.I != null && SkyController.I.Era < 0.5f) ? 1.6f : 1.6f; }
+    }
     public bool Sinking, Dead, Frozen;
     public float LastDamageTime = -99f;
     public float WindEff, WindAngle;

@@ -29,7 +29,7 @@ Shader "SR/Ocean"
             float _WaveTime, _WaveAmp;
             float4 _SunDirG, _SunColorG, _SkyZenithG, _SkyHorizonG;
             float _SunVisG, _StormG, _EraShiftG, _DayLightG;
-            float4 _ShipA, _ShipB, _ShipSpeeds;
+            float4 _ShipA, _ShipB, _ShipC, _ShipSpeeds;
             float4 _DeepColor, _MidColor, _ShallowColor, _SSSColor, _FoamColor;
             sampler2D _NormalTex, _NoiseTex;
             UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
@@ -187,7 +187,7 @@ Shader "SR/Ocean"
                 float foamNoise = saturate(fn * 1.2 + fn2 * 0.5 - 0.25);
                 float crest = saturate((0.9 - jac) * (2.0 + _StormG * 1.1)) * saturate(height * 0.5 + 0.25);
                 float shore = saturate(1.0 - wd / (1.3 + 0.6 * sin(_WaveTime * 0.8 + i.wpos.x * 0.05 + i.wpos.z * 0.03)));
-                float wk = Wake(i.wpos.xz, _ShipA, _ShipSpeeds.x) + Wake(i.wpos.xz, _ShipB, _ShipSpeeds.y);
+                float wk = Wake(i.wpos.xz, _ShipA, _ShipSpeeds.x) + Wake(i.wpos.xz, _ShipB, _ShipSpeeds.y) + Wake(i.wpos.xz, _ShipC, _ShipSpeeds.z);
                 float foam = saturate(crest * 1.1 + shore * 0.55 + wk * 0.95);
                 foam *= smoothstep(0.38, 0.75, foamNoise + foam * 0.3);
                 float3 foamCol = _FoamColor.rgb * (0.3 * day + 0.42 * _SunColorG.rgb * saturate(dot(N, L) * 0.5 + 0.5) * _SunVisG + 0.12);

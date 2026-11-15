@@ -6,7 +6,7 @@ public class SkyController : MonoBehaviour
 {
     public static SkyController I;
 
-    public enum Preset { Dawn, Day, Storm, Afternoon, Sunset, Dusk, Title }
+    public enum Preset { Dawn, Day, Storm, Afternoon, Sunset, Dusk, Title, Night }
 
     struct P
     {
@@ -19,6 +19,8 @@ public class SkyController : MonoBehaviour
     public Light Sun;
     public float Storm, StormTarget;
     public float Era;
+    public float FogMul = 1f;
+    public Color FogTint = Color.clear;
     float flash, nextLightning = 8f;
     ParticleSystem rain;
     LineRenderer bolt;
@@ -71,6 +73,12 @@ public class SkyController : MonoBehaviour
                 x.sun = new Color(1f, 0.55f, 0.25f); x.cloudLit = new Color(1f, 0.6f, 0.4f); x.cloudShade = new Color(0.36f, 0.24f, 0.32f);
                 x.ambSky = new Color(0.36f, 0.36f, 0.55f); x.ambEq = new Color(0.62f, 0.4f, 0.32f); x.ambGround = new Color(0.18f, 0.14f, 0.14f);
                 x.elev = 5f; x.azim = 85f; x.sunI = 1.55f; x.sunVis = 1f; x.cloud = 0.48f; x.fogD = 0.0006f; x.night = 0.05f; x.day = 0.7f; x.exposure = 0.9f;
+                break;
+            case Preset.Night:
+                x.zenith = new Color(0.01f, 0.02f, 0.05f); x.horizon = new Color(0.06f, 0.09f, 0.15f); x.fog = new Color(0.05f, 0.07f, 0.11f);
+                x.sun = new Color(0.62f, 0.72f, 0.95f); x.cloudLit = new Color(0.16f, 0.19f, 0.27f); x.cloudShade = new Color(0.03f, 0.04f, 0.06f);
+                x.ambSky = new Color(0.13f, 0.17f, 0.3f); x.ambEq = new Color(0.09f, 0.11f, 0.18f); x.ambGround = new Color(0.03f, 0.03f, 0.05f);
+                x.elev = 30f; x.azim = 200f; x.sunI = 0.6f; x.sunVis = 0.6f; x.cloud = 0.3f; x.fogD = 0.0007f; x.night = 1f; x.day = 0.38f; x.exposure = 2.3f;
                 break;
             case Preset.Dusk:
                 x.zenith = new Color(0.05f, 0.07f, 0.17f); x.horizon = new Color(0.55f, 0.3f, 0.28f); x.fog = new Color(0.32f, 0.22f, 0.26f);
@@ -255,13 +263,14 @@ public class SkyController : MonoBehaviour
         RenderSettings.ambientEquatorColor = p.ambEq * (1f + fl);
         RenderSettings.ambientGroundColor = p.ambGround;
         RenderSettings.fogColor = p.fog;
-        RenderSettings.fogDensity = p.fogD;
+        RenderSettings.fogDensity = p.fogD * FogMul;
+        if (FogMul > 1.01f) { float k = Mathf.Clamp01((FogMul - 1f) / 6f); RenderSettings.fogColor = Color.Lerp(p.fog, new Color(0.62f, 0.64f, 0.66f) * (p.day + 0.2f), k * 0.7f); }
 
         Vec("_SunDirG", toSun);
         Col("_SunColorG", p.sun, 1.6f);
         Col("_SkyZenithG", p.zenith);
         Col("_SkyHorizonG", p.horizon);
-        Col("_FogColorG", p.fog);
+        Col("_FogColorG", RenderSettings.fogColor);
         Col("_CloudLitG", p.cloudLit);
         Col("_CloudShadeG", p.cloudShade);
         Col("_AmbientG", Color.Lerp(p.ambSky, p.ambEq, 0.5f));

@@ -21,6 +21,7 @@ public class Market
     public string PortName = "";
     public string PortNote = "";
     public bool CanBuy = true, CanSell = true;
+    public string WestLabel = "in the west";
 
     public Market()
     {
@@ -46,6 +47,32 @@ public class Market
         PortNote = Game.I != null && Game.I.Tutorial ? "TRADE SHIFT: prices have soared. BEST: press SELL ALL on every spice, then DONE." : "TRADE SHIFT: the storm closed the northern routes. Spice prices have soared.";
         CanBuy = false; CanSell = true;
         Items[0].SellPrice = 31; Items[1].SellPrice = 42; Items[2].SellPrice = 27;
+    }
+
+    public void UseIncenseGoods()
+    {
+        Items.Clear();
+        Items.Add(new Commodity { Name = "Frankincense", Local = "luban", Desc = "Pale resin of the Arabian hills. Every temple from Aden to Rome burns it.", Col = new Color(0.86f, 0.78f, 0.55f), WestPrice = 31 });
+        Items.Add(new Commodity { Name = "Myrrh", Local = "murr", Desc = "Dark, bitter and precious: perfume, medicine and offering.", Col = new Color(0.55f, 0.25f, 0.12f), WestPrice = 38 });
+        Items.Add(new Commodity { Name = "Dates", Local = "tamr", Desc = "Sweet and cheap. Sailors trade them everywhere.", Col = new Color(0.45f, 0.22f, 0.1f), WestPrice = 13 });
+    }
+
+    public void SetRasAlMira2()
+    {
+        PortName = "RAS AL-MIRA";
+        WestLabel = "in Aden";
+        PortNote = "BEST: buy MYRRH and FRANKINCENSE (the biggest profit in Aden), then DATES with what is left. Then DONE.";
+        CanBuy = true; CanSell = true;
+        Items[0].BuyPrice = 12; Items[1].BuyPrice = 15; Items[2].BuyPrice = 5;
+        foreach (var i in Items) i.SellPrice = Mathf.Round(i.BuyPrice * 0.8f);
+    }
+
+    public void SetAden()
+    {
+        PortName = "ADEN";
+        PortNote = "Aden's temples burn incense day and night. BEST: press SELL ALL on every good, then DONE.";
+        CanBuy = false; CanSell = true;
+        Items[0].SellPrice = 31; Items[1].SellPrice = 38; Items[2].SellPrice = 13;
     }
 
     public int BuyCost(int idx) => Mathf.RoundToInt(Items[idx].BuyPrice);

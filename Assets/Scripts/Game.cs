@@ -10,8 +10,33 @@ public class Game : MonoBehaviour
     public enum GameState { Loading, Title, Cutscene, Sailing, GameOver, Ending }
     public GameState State = GameState.Loading;
 
-    public Ship Player, Raider;
-    public EnemyAI RaiderAI;
+    public Ship Player, Raider, Flagship;
+    public EnemyAI RaiderAI, FlagshipAI;
+    public static int PendingChapter;
+    public int Chapter = 1;
+
+    public Ship CurrentEnemy
+    {
+        get
+        {
+            Ship best = null; float bd = 1e9f;
+            foreach (var e in new[] { Raider, Flagship })
+            {
+                if (e == null || !e.gameObject.activeInHierarchy || e.Dead) continue;
+                float d = Player != null ? Vector3.Distance(e.Planar, Player.Planar) : 0f;
+                if (e == Flagship) d -= 60f;
+                if (d < bd) { bd = d; best = e; }
+            }
+            return best;
+        }
+    }
+
+    public void LoadChapter(int c)
+    {
+        PendingChapter = c;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
     public Market Market = new Market();
     public Story Story;
     public bool CombatEnabled;
@@ -106,11 +131,15 @@ public class Game : MonoBehaviour
         EraShift.Create(transform);
         Story = gameObject.AddComponent<Story>();
         WaveField.Push(0, 0.55f);
-        yield return World.Build(transform, (p, s) => HUD.I.SetLoading(0.05f + p * 0.7f, s));
+        var bootArgs = System.Environment.GetCommandLineArgs();
+        int ci = System.Array.IndexOf(bootArgs, "-chapter");
+        if (ci >= 0 && ci + 1 < bootArgs.Length && bootArgs[ci + 1] == "2") PendingChapter = 2;
+        Chapter = PendingChapter == 2 ? 2 : 1;
+        yield return World.Build(transform, (p, s) => HUD.I.SetLoading(0.05f + p * 0.7f, s), Chapter);
 
         Player = Ship.Create(ShipBuilder.Style.Kaveri, transform, "Kaveri", true);
         Player.OceanSlot = 0;
-        Player.Teleport(World.P("start"), 270f);
+        Player.Teleport(World.P("start"), Chapter == 2 ? 180f : 270f);
         Player.OnDamaged += a => { damageFlash = Mathf.Min(1f, damageFlash + a / 18f); CameraRig.I.Shake(Mathf.Clamp01(a / 25f)); };
         Player.OnDeath += () => StartCoroutine(PlayerLost());
         Combat.I.Ships.Add(Player);
@@ -127,6 +156,28 @@ public class Game : MonoBehaviour
         Combat.I.Ships.Add(Raider);
         Raider.gameObject.SetActive(false);
 
+        if (Chapter == 2)
+        {
+            Market.UseIncenseGoods();
+            Market.Gold = 220;
+            Flagship = Ship.Create(ShipBuilder.Style.Raider, transform, "Black Compass", false);
+            Flagship.transform.localScale = Vector3.one * 1.35f;
+            Flagship.OceanSlot = 2;
+            Flagship.MaxSpeed = 13f;
+            Flagship.MinDrive = 6f;
+            Flagship.FireDamage = 1.0f;
+            FlagshipAI = Flagship.gameObject.AddComponent<EnemyAI>();
+            FlagshipAI.Me = Flagship;
+            FlagshipAI.Target = Player;
+            FlagshipAI.VolleyCount = 7;
+            FlagshipAI.VolleyDamage = 1.9f;
+            FlagshipAI.FireInterval = 4.3f;
+            FlagshipAI.Accuracy = 9f;
+            Combat.I.Ships.Add(Flagship);
+            Flagship.gameObject.SetActive(false);
+            Stealth.Create(transform);
+        }
+
         rig.Target = Player;
         HUD.I.InitChart();
         Tutor.Create();
@@ -136,7 +187,7 @@ public class Game : MonoBehaviour
         yield return null;
         var args = System.Environment.GetCommandLineArgs();
         if (System.Array.IndexOf(args, "-capture") >= 0) { HUD.I.HideLoading(); gameObject.AddComponent<Director>(); yield break; }
-        Title();
+        if (Chapter == 2) StartChapter2(); else Title();
         if (System.Array.IndexOf(args, "-autoplay") >= 0) gameObject.AddComponent<Autoplay>();
     }
 
@@ -171,6 +222,34 @@ public class Game : MonoBehaviour
         if (State != GameState.Title) return;
         HUD.I.ShowTitle(false);
         StartCoroutine(Prologue());
+    }
+
+    void StartChapter2()
+    {
+        State = GameState.Title;
+        HUD.I.HideLoading();
+        HUD.I.ShowTitle(false);
+        StartCoroutine(Prologue2());
+    }
+
+    IEnumerator Prologue2()
+    {
+        State = GameState.Cutscene;
+        HUD.I.Letterbox(true);
+        SkyController.I.Go(SkyController.Preset.Dawn, 0f);
+        BaseTrack = AudioMan.Track.Mystery;
+        Vector3 dock = World.P("dock_ras");
+        CameraRig.I.Shot(dock + new Vector3(160, 30, -150), dock + new Vector3(-40, 8, 20), 42, 0.01f);
+        CameraRig.I.Drift(new Vector3(-3f, -0.2f, 2f));
+        var cards = new[]
+        {
+            new[] { "CHAPTER II", "THE GATE OF TEARS" },
+            new[] { "RAS AL-MIRA  ·  THE MORNING AFTER", "Raghavan's chart shows a passage beyond the edge of every known map.\nIts first leg runs west, through Aden, and through the Gate of Tears." },
+            new[] { "THE GATE OF TEARS", "A narrow strait between Arabia and Azania,\nchained shut by the ships and watchfires of the Hidden Cartographers." },
+            new[] { "", "Some say no ship slips through the Gate unseen." },
+        };
+        yield return HUD.I.PlayCards(cards);
+        Story.Begin(0, false);
     }
 
     IEnumerator Prologue()
@@ -220,11 +299,12 @@ public class Game : MonoBehaviour
         EraShift.I.ForceOff();
         Player.ResetState(Player.MaxHP);
         Player.SailLevel = 0;
-        if (Raider != null) { Raider.ClearFires(); Raider.gameObject.SetActive(false); RaiderAI.Active = false; }
+        ClearEnemies();
         CombatEnabled = false;
         HUD.I.EnemyTarget = null;
         HUD.I.ClearDialogue();
         ClearInteraction();
+        if (Stealth.I != null) Stealth.I.ResetState();
         Story.Begin(Checkpoint, true);
         yield return new WaitForSecondsRealtime(0.4f);
         HUD.I.FadeTo(0f, 1f);
@@ -232,7 +312,27 @@ public class Game : MonoBehaviour
 
     public void Restart()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        LoadChapter(Chapter);
+    }
+
+    public void ClearEnemies()
+    {
+        foreach (var e in new[] { Raider, Flagship })
+            if (e != null) { e.ClearFires(); e.gameObject.SetActive(false); }
+        if (RaiderAI != null) RaiderAI.Active = false;
+        if (FlagshipAI != null) FlagshipAI.Active = false;
+    }
+
+    public void SpawnFlagship(Vector3 pos, float heading)
+    {
+        Flagship.gameObject.SetActive(true);
+        Flagship.ResetState(240f);
+        Flagship.MaxHP = 240f;
+        Flagship.HP = 240f;
+        Flagship.Teleport(pos, heading);
+        Flagship.SailLevel = 3;
+        Flagship.SailAmt = 1f;
+        FlagshipAI.Active = true;
     }
 
     public void SetPause(bool on)
@@ -295,7 +395,8 @@ public class Game : MonoBehaviour
         HUD.I.ForceCloseCards();
         HUD.I.HideLoading();
         Player.ResetState(Player.MaxHP);
-        if (Raider != null) { Raider.ClearFires(); Raider.gameObject.SetActive(false); RaiderAI.Active = false; }
+        ClearEnemies();
+        if (Stealth.I != null) Stealth.I.ResetState();
         CombatEnabled = false;
         HUD.I.EnemyTarget = null;
         HUD.I.ClearDialogue();
@@ -441,6 +542,7 @@ public class Game : MonoBehaviour
 
     public void StartFromBot(bool tutorial)
     {
+        if (State != GameState.Title || Chapter == 2) return;
         if (tutorial) StartTutorial(); else StartGame();
     }
 
@@ -492,6 +594,11 @@ public class Game : MonoBehaviour
         }
         if (In.Down(Key.M) || In.Down(Key.Tab)) HUD.I.ToggleChart();
         if (In.Down(Key.P) || In.Down(Key.Escape)) SetPause(true);
+        if (In.Down(Key.L))
+        {
+            Player.SetLantern(!Player.LanternOn);
+            HUD.I.Toast(Player.LanternOn ? "LANTERN LIT  ·  you can be seen from afar" : "LANTERN DOUSED  ·  you are harder to see", Player.LanternOn ? UIKit.Gold : UIKit.Teal);
+        }
 
         // interaction
         if (interAction != null)
@@ -551,15 +658,16 @@ public class Game : MonoBehaviour
         Vector3 off = p - pp;
         float d = Mathf.Clamp(off.magnitude, 25f, 140f);
         p = pp + off.normalized * d;
-        if (Raider != null && Raider.gameObject.activeInHierarchy && !Raider.Dead)
+        var foe = CurrentEnemy;
+        if (foe != null)
         {
-            Vector3 rp = Raider.Planar;
+            Vector3 rp = foe.Planar;
             float rd = Vector3.Distance(rp, pp);
             Vector3 camFlat = new Vector3(ray.direction.x, 0, ray.direction.z);
             float ang = Vector3.Angle(camFlat, rp - new Vector3(ray.origin.x, 0, ray.origin.z));
             if (rd < 150f && (ang < (aiming ? 10f : 28f)))
             {
-                targetVel = Raider.Velocity;
+                targetVel = foe.Velocity;
                 return rp + Vector3.up * 1f;
             }
         }
@@ -569,13 +677,19 @@ public class Game : MonoBehaviour
     void ShipContacts(float dt)
     {
         ramCooldown -= dt;
+        Contact(Raider, 11f);
+        Contact(Flagship, 14f);
+    }
+
+    void Contact(Ship Raider, float reach)
+    {
         if (Raider == null || !Raider.gameObject.activeInHierarchy || Raider.Dead || Player.Dead) return;
         Vector3 d = Raider.Planar - Player.Planar;
         float dist = d.magnitude;
-        if (dist < 11f && dist > 0.01f)
+        if (dist < reach && dist > 0.01f)
         {
             Vector3 n = d / dist;
-            float push = (11f - dist) * 0.5f;
+            float push = (reach - dist) * 0.5f;
             Player.Nudge(-n * push);
             Raider.Nudge(n * push);
             float closing = Vector3.Dot(Player.Velocity - Raider.Velocity, n);

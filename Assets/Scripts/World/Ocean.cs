@@ -6,7 +6,7 @@ public class Ocean : MonoBehaviour
 {
     public static Ocean I;
     Transform cam;
-    Vector4 shipA = new Vector4(99999, 99999, 0, 1), shipB = new Vector4(99999, 99999, 0, 1);
+    Vector4 shipA = new Vector4(99999, 99999, 0, 1), shipB = new Vector4(99999, 99999, 0, 1), shipC = new Vector4(99999, 99999, 0, 1);
     Vector4 speeds;
 
     public static Ocean Create(Transform parent, Transform camera)
@@ -65,13 +65,15 @@ public class Ocean : MonoBehaviour
     {
         var v = new Vector4(pos.x, pos.z, fwd.x, fwd.z);
         if (idx == 0) { shipA = v; speeds.x = speed; }
-        else { shipB = v; speeds.y = speed; }
+        else if (idx == 1) { shipB = v; speeds.y = speed; }
+        else { shipC = v; speeds.z = speed; }
     }
 
     public void ClearShip(int idx)
     {
         if (idx == 0) { shipA = new Vector4(99999, 99999, 0, 1); speeds.x = 0; }
-        else { shipB = new Vector4(99999, 99999, 0, 1); speeds.y = 0; }
+        else if (idx == 1) { shipB = new Vector4(99999, 99999, 0, 1); speeds.y = 0; }
+        else { shipC = new Vector4(99999, 99999, 0, 1); speeds.z = 0; }
     }
 
     void LateUpdate()
@@ -83,6 +85,7 @@ public class Ocean : MonoBehaviour
         }
         Shader.SetGlobalVector("_ShipA", shipA);
         Shader.SetGlobalVector("_ShipB", shipB);
+        Shader.SetGlobalVector("_ShipC", shipC);
         Shader.SetGlobalVector("_ShipSpeeds", speeds);
     }
 }

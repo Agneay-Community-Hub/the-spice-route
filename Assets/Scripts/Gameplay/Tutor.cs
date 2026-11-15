@@ -290,13 +290,21 @@ public class Tutor : MonoBehaviour
         if (G.ShoreWarning) return "> LAND AHEAD! Hold A or D to turn away, or press S to slow down";
         if (p.HP < p.MaxHP * 0.35f) return "> Ship badly damaged! Sail away from danger; it repairs itself in 8 s";
 
-        if (G.CombatEnabled && G.Raider != null && G.Raider.gameObject.activeInHierarchy && !G.Raider.Dead)
+        bool ch2 = G.Chapter == 2;
+        if (ch2 && Stealth.I != null && Stealth.I.Active && !Stealth.I.Spotted)
         {
-            Vector3 to = G.Raider.Planar - p.Planar;
+            if (p.LanternOn) return "> Press L to douse your lantern";
+            if (Stealth.I.InLight) return "> You are in the light! Steer out of it (A / D)";
+            if (Stealth.I.Detection > 0.4f) return "> They are noticing you: press S to slow down";
+        }
+        var foe = G.CurrentEnemy;
+        if (G.CombatEnabled && foe != null)
+        {
+            Vector3 to = foe.Planar - p.Planar;
             float d = to.magnitude;
             float side = Vector3.SignedAngle(p.Fwd, to, Vector3.up);
             if (d > 150f) return "> Enemy is " + Mathf.RoundToInt(d) + " m away: sail toward the RED diamond";
-            if (!Combat.Broadside(p, G.Raider.Planar, 62f))
+            if (!Combat.Broadside(p, foe.Planar, 62f))
             {
                 bool ahead = Mathf.Abs(side) < 90f;
                 string turn = (side > 0) == ahead ? "HOLD A" : "HOLD D";
@@ -305,7 +313,14 @@ public class Tutor : MonoBehaviour
             return G.ReloadReady ? "> Enemy is beside you: CLICK LEFT MOUSE to shoot!" : "> Reloading... keep the enemy beside you";
         }
 
-        if (Story.I.Step == 6 && EraShift.I.Unlocked)
+        if (ch2 && Story.I.Step == 2 && SkyController.I.FogMul > 2f)
+            return EraShift.I.Active ? "> Sail between the glowing beacon pairs" : "> Press SHIFT to see the ancient beacons";
+        if (ch2 && Story.I.Step == 5)
+        {
+            if (!string.IsNullOrEmpty(HUD.I.Reading) && !EraShift.I.Active) return "> You are beside the wreck: press SHIFT";
+            if (HUD.I.Reading.StartsWith("Reading")) return p.SailLevel > 1 ? "> Reading... press S to slow down" : "> Reading... stay close until 100%";
+        }
+        if (!ch2 && Story.I.Step == 6 && EraShift.I.Unlocked)
         {
             if (EraShift.I.Activations == 0) return "> Press SHIFT now";
             if (!string.IsNullOrEmpty(HUD.I.Reading) && !EraShift.I.Active) return "> You are close to a stone: press SHIFT";
@@ -313,12 +328,13 @@ public class Tutor : MonoBehaviour
             if (HUD.I.Reading.StartsWith("Reading")) return "> Reading... stay close until 100%";
             if (EraShift.I.Active && EraShift.I.Energy < 0.5f) return "> Press SHIFT to switch the magic off and save power";
         }
-        if (Story.I.Step == 7 && !EraShift.I.Active && EraShift.I.Energy > 0.5f) return "> Tap SHIFT to see the ghost ship";
+        if (!ch2 && Story.I.Step == 7 && !EraShift.I.Active && EraShift.I.Energy > 0.5f) return "> Tap SHIFT to see the ghost ship";
 
         if (!HUD.I.MarkerTarget.HasValue) return "";
         float dist = Vector3.Distance(HUD.I.MarkerTarget.Value, p.transform.position);
         if (p.SailLevel == 0 && dist > 60f) return "> Press W to open the sail and start moving";
-        if (dist < 90f && p.Speed > 4f && (Story.I.Step == 1 || Story.I.Step == 8)) return "> Almost there: press S to slow down";
+        bool docking = ch2 ? (Story.I.Step == 1 || Story.I.Step == 3) : (Story.I.Step == 1 || Story.I.Step == 8);
+        if (dist < 90f && p.Speed > 4f && docking) return "> Almost there: press S to slow down";
         if (G.AutoSteer) return p.SailLevel < 3 && dist > 150f ? "> Auto-steer is driving. Press W for more speed" : "> Auto-steer is driving. Relax, or press T to steer";
         float err = BearingError();
         if (p.WindEff < 0.3f && p.SailLevel > 0) return "> Wind is in your face: turn a little " + (err > 0 ? "left" : "right") + " (A or D)";

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>Builds the whole voyage procedurally and holds gameplay-relevant locations.</summary>
-public static class World
+public static partial class World
 {
     public static readonly List<Island> Islands = new List<Island>();
     public static readonly List<Vector4> Rocks = new List<Vector4>(); // x, z, radius, top height
@@ -82,11 +82,14 @@ public static class World
     }
 
     // ---------------------------------------------------------------- build
-    public static IEnumerator Build(Transform parent, System.Action<float, string> progress)
+    public static IEnumerator Build(Transform parent, System.Action<float, string> progress, int chapter = 1)
     {
         Root = new GameObject("World").transform;
         Root.SetParent(parent, false);
         Islands.Clear(); Rocks.Clear(); Points.Clear(); EchoStones.Clear(); Channel.Clear(); RouteMarkers.Clear(); EchoMotes.Clear();
+        Beacons.Clear(); Patrols.Clear(); FogChannel.Clear();
+        if (chapter == 2) { yield return BuildChapter2(progress); yield break; }
+        ChartRect = new Rect(-2900, -1350, 3700, 2600);
 
         progress(0.05f, "Raising the Malabar coast");
         yield return null;

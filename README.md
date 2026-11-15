@@ -1,4 +1,4 @@
-# The Spice Route: Across Seven Seas — Chapter I: The Malabar Expedition
+# The Spice Route: Across Seven Seas — Chapters I & II
 
 ![The Spice Route](docs/banner.jpg)
 
@@ -10,6 +10,21 @@ Sail an ancient stitched-plank trading ship out of **Muziris** on the Malabar Co
 carrying a sealed package across the western sea before the monsoon turns. Trade spices, read
 the wind, survive a monsoon squall, fight off the Hidden Cartographers, and use your missing
 father's bronze compass to **shift** between the present and the sea's memory of the past.
+
+## Chapter II — The Gate of Tears
+
+Pick **CHAPTER II** on the title screen (or *Continue to Chapter II* after Chapter I's ending).
+
+The chart Raghavan hid points west. Sail from Ras al-Mira with frankincense and myrrh, cross a
+fog-bound reef coast by following ancient beacons that only the **Era Shift** reveals, sell your
+cargo in **Aden** (a walled port inside a volcanic crater), and learn from Zahra the scribe what
+happened to your father. Then, at night, slip through the **Gate of Tears** past the Hidden
+Cartographers' watchtower beams and lantern-lit patrol boats, read the echo of the Vellimeen's
+last battle, and face the flagship **Black Compass** at dawn.
+
+New in Chapter II: night and fog weather, **lantern stealth** (press **L** to douse your lantern;
+a detection meter fills while you are in a beam or a patrol's lantern light), a boss ship with an
+escort, new goods, and a new map of the Gulf of Aden and the Red Sea mouth.
 
 ## Screenshots
 
@@ -52,6 +67,7 @@ AHEAD** warning plus **T auto-steer** are available in every mode.
 | Scroll | Camera distance |
 | SHIFT | Era Shift |
 | T | Auto-steer toward the gold diamond (steers around land) |
+| L | Douse / light your lantern (Chapter II stealth) |
 | Q | Perspective Shift (helm view) |
 | E | Interact (trade, open) |
 | Left click | Loose a volley of fire-arrows (turn broadside first) |
@@ -96,7 +112,7 @@ upload it as an HTML game, and set the viewport to 1280 × 720 with fullscreen e
 The Windows player has two command-line modes, used to test the game and to make its marketing media:
 
 ```bash
-SpiceRoute.exe -autoplay [-tutorial] -shots <folder>
+SpiceRoute.exe -autoplay [-tutorial] [-chapter 2] -shots <folder>
 ```
 
 A bot plays the whole chapter from the title screen to the ending. It logs every story step, flags any step where it gets stuck, dies or loses the HUD, and saves screenshots. See `Assets/Scripts/Gameplay/Autoplay.cs`.

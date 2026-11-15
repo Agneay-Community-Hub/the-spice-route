@@ -6,6 +6,10 @@ public class EnemyAI : MonoBehaviour
     public Ship Me, Target;
     public bool Active;
     public float Accuracy = 7f;
+    public int VolleyCount = 6;
+    public float VolleyDamage = 2.6f;
+    public float FireInterval = 4.4f;
+    public bool BothSides;
     float fireTimer = 4f;
     float sideSign = 1f, sideTimer;
 
@@ -54,8 +58,8 @@ public class EnemyAI : MonoBehaviour
         fireTimer -= dt;
         if (fireTimer <= 0 && dist < 135f && dist > 18f && Combat.Broadside(Me, Target.Planar, 55f))
         {
-            Combat.I.FireVolley(Me, Target.Planar + Vector3.up, Target.Velocity, 6, Accuracy * Mathf.Lerp(0.6f, 1.3f, dist / 135f), 2.6f);
-            fireTimer = Random.Range(3.6f, 5.2f);
+            Combat.I.FireVolley(Me, Target.Planar + Vector3.up, Target.Velocity, VolleyCount, Accuracy * Mathf.Lerp(0.6f, 1.3f, dist / 135f), VolleyDamage);
+            fireTimer = FireInterval * Random.Range(0.82f, 1.18f);
         }
     }
 }
