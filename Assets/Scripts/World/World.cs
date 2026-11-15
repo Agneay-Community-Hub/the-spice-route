@@ -91,14 +91,14 @@ public static partial class World
         Tide = 0f; SandBars.Clear(); Canal.Clear();
         if (chapter == 2) { yield return BuildChapter2(progress); yield break; }
         if (chapter == 3) { yield return BuildChapter3(progress); yield break; }
-        ChartRect = new Rect(-2900, -1350, 3700, 2600);
+        ChartRect = chapter == 4 ? new Rect(-2900, -2650, 3700, 3950) : new Rect(-2900, -1350, 3700, 2600);
 
         progress(0.05f, "Raising the Malabar coast");
         yield return null;
-        Islands.Add(new Island("Malabar", new Rect(110, -1350, 1500, 2700), 8f, Biome.Malabar, 2, MalabarH));
+        Islands.Add(new Island("Malabar", chapter == 4 ? new Rect(110, -2650, 1500, 4000) : new Rect(110, -1350, 1500, 2700), 8f, Biome.Malabar, 2, MalabarH));
         yield return null;
         progress(0.12f, "Shaping the Arabian shore");
-        Islands.Add(new Island("Arabia", new Rect(-3350, -1350, 1150, 2500), 8f, Biome.Arabian, 12, ArabH));
+        Islands.Add(new Island("Arabia", chapter == 4 ? new Rect(-3350, -2650, 1150, 3800) : new Rect(-3350, -1350, 1150, 2500), 8f, Biome.Arabian, 12, ArabH));
         yield return null;
         progress(0.18f, "Scattering islands");
         AddIsland("Cape", new Vector2(-380, 430), 75, 26, 3, Biome.Rocky, 4f);
@@ -137,6 +137,7 @@ public static partial class World
         BuildOutpost();
         yield return null;
         BuildIslets();
+        if (chapter == 4) { progress(0.66f, "Raising the Storm Wall"); yield return null; BuildEdge(); }
         yield return null;
         progress(0.7f, "Drawing the chart");
         BuildChart();

@@ -12,6 +12,8 @@ public class Game : MonoBehaviour
 
     public Ship Player, Raider, Flagship;
     public EnemyAI RaiderAI, FlagshipAI;
+    [System.NonSerialized] public Ship[] Allies;
+    [System.NonSerialized] public AllyAI[] AllyAIs;
     public static int PendingChapter;
     public int Chapter = 1;
 
@@ -133,8 +135,8 @@ public class Game : MonoBehaviour
         WaveField.Push(0, 0.55f);
         var bootArgs = System.Environment.GetCommandLineArgs();
         int ci = System.Array.IndexOf(bootArgs, "-chapter");
-        if (ci >= 0 && ci + 1 < bootArgs.Length && (bootArgs[ci + 1] == "2" || bootArgs[ci + 1] == "3")) PendingChapter = int.Parse(bootArgs[ci + 1]);
-        Chapter = PendingChapter == 2 || PendingChapter == 3 ? PendingChapter : 1;
+        if (ci >= 0 && ci + 1 < bootArgs.Length && (bootArgs[ci + 1] == "2" || bootArgs[ci + 1] == "3" || bootArgs[ci + 1] == "4")) PendingChapter = int.Parse(bootArgs[ci + 1]);
+        Chapter = PendingChapter >= 2 && PendingChapter <= 4 ? PendingChapter : 1;
         yield return World.Build(transform, (p, s) => HUD.I.SetLoading(0.05f + p * 0.7f, s), Chapter);
 
         Player = Ship.Create(ShipBuilder.Style.Kaveri, transform, "Kaveri", true);
@@ -196,6 +198,50 @@ public class Game : MonoBehaviour
             Stealth.Create(transform);
         }
 
+        if (Chapter == 4)
+        {
+            Flagship = Ship.Create(ShipBuilder.Style.Raider, transform, "The Last Map", false);
+            Flagship.transform.localScale = Vector3.one * 1.5f;
+            Flagship.OceanSlot = 2;
+            Flagship.MaxSpeed = 13f;
+            Flagship.MinDrive = 6f;
+            Flagship.FireDamage = 0.9f;
+            Flagship.Team = 1;
+            FlagshipAI = Flagship.gameObject.AddComponent<EnemyAI>();
+            FlagshipAI.Me = Flagship;
+            FlagshipAI.Target = Player;
+            FlagshipAI.VolleyCount = 8;
+            FlagshipAI.VolleyDamage = 2.0f;
+            FlagshipAI.FireInterval = 4.4f;
+            FlagshipAI.Accuracy = 9f;
+            Combat.I.Ships.Add(Flagship);
+            Flagship.gameObject.SetActive(false);
+
+            string[] names = { "Thirayar", "Mayil" };
+            Allies = new Ship[2];
+            AllyAIs = new AllyAI[2];
+            for (int i = 0; i < 2; i++)
+            {
+                var a = Ship.Create(ShipBuilder.Style.Merchant, transform, names[i], false);
+                a.Team = 0;
+                a.MaxHP = a.HP = 160f;
+                a.MaxSpeed = 17.5f;
+                a.MinDrive = 7f;
+                a.DamageTaken = 0.35f;
+                a.FireDamage = 0.5f;
+                a.IgnoreReefs = true;
+                var ai = a.gameObject.AddComponent<AllyAI>();
+                ai.Me = a;
+                ai.FollowDist = 55f + i * 50f;
+                ai.Side = i == 0 ? 1f : -1f;
+                Combat.I.Ships.Add(a);
+                Allies[i] = a;
+                AllyAIs[i] = ai;
+            }
+        }
+        Raider.Team = 1;
+        if (Flagship != null) Flagship.Team = 1;
+
         rig.Target = Player;
         HUD.I.InitChart();
         Tutor.Create();
@@ -205,7 +251,7 @@ public class Game : MonoBehaviour
         yield return null;
         var args = System.Environment.GetCommandLineArgs();
         if (System.Array.IndexOf(args, "-capture") >= 0) { HUD.I.HideLoading(); gameObject.AddComponent<Director>(); yield break; }
-        if (Chapter == 2) StartChapter2(); else if (Chapter == 3) StartChapter3(); else Title();
+        if (Chapter == 2) StartChapter2(); else if (Chapter == 3) StartChapter3(); else if (Chapter == 4) StartChapter4(); else Title();
         if (System.Array.IndexOf(args, "-autoplay") >= 0) gameObject.AddComponent<Autoplay>();
     }
 
@@ -240,6 +286,34 @@ public class Game : MonoBehaviour
         if (State != GameState.Title) return;
         HUD.I.ShowTitle(false);
         StartCoroutine(Prologue());
+    }
+
+    void StartChapter4()
+    {
+        State = GameState.Title;
+        HUD.I.HideLoading();
+        HUD.I.ShowTitle(false);
+        StartCoroutine(Prologue4());
+    }
+
+    IEnumerator Prologue4()
+    {
+        State = GameState.Cutscene;
+        HUD.I.Letterbox(true);
+        SkyController.I.Go(SkyController.Preset.Dawn, 0f);
+        BaseTrack = AudioMan.Track.Mystery;
+        Vector3 dock = World.P("dock_muziris");
+        CameraRig.I.Shot(dock + new Vector3(-180, 30, 120), dock + new Vector3(60, 10, 0), 40, 0.01f);
+        CameraRig.I.Drift(new Vector3(4f, -0.3f, -2f));
+        var cards = new[]
+        {
+            new[] { "CHAPTER IV", "ACROSS SEVEN SEAS" },
+            new[] { "MUZIRIS  \u00b7  HOMECOMING", "Raghavan is home at last. But the chart from the Vellimeen points south,\nbeyond Kadal, beyond the edge of every known map." },
+            new[] { "THE STORM WALL", "A storm that has never ended guards the way to the Sunken Archive,\nwhere the first navigators wrote down every route of the sea." },
+            new[] { "", "Whoever holds the Archive holds the sea." },
+        };
+        yield return HUD.I.PlayCards(cards);
+        Story.Begin(0, false);
     }
 
     void StartChapter3()
@@ -448,7 +522,7 @@ public class Game : MonoBehaviour
         HUD.I.ClearDialogue();
         ClearInteraction();
         EraShift.I.ForceOff();
-        Story.Begin(Mathf.Clamp(s, 0, 8), true);
+        Story.Begin(Mathf.Clamp(s, 0, Chapter == 1 ? 8 : Chapter == 2 ? 6 : 5), true);
     }
 
     void Update()
@@ -725,7 +799,25 @@ public class Game : MonoBehaviour
     {
         ramCooldown -= dt;
         Contact(Raider, 11f);
-        Contact(Flagship, 14f);
+        Contact(Flagship, Chapter == 4 ? 16f : 14f);
+        if (Allies != null && Allies.Length == 2)
+        {
+            foreach (var a in Allies) Separate(Player, a, 15f);
+            Separate(Allies[0], Allies[1], 15f);
+            foreach (var a in Allies) { Separate(a, Raider, 13f); Separate(a, Flagship, 16f); }
+        }
+    }
+
+    static void Separate(Ship a, Ship b, float reach)
+    {
+        if (a == null || b == null || !a.gameObject.activeInHierarchy || !b.gameObject.activeInHierarchy || a.Dead || b.Dead) return;
+        Vector3 d = b.Planar - a.Planar;
+        float dist = d.magnitude;
+        if (dist >= reach || dist < 0.01f) return;
+        Vector3 n = d / dist;
+        float push = (reach - dist) * 0.5f;
+        if (!a.IsPlayer) a.Nudge(-n * push); else a.Nudge(-n * push * 0.3f);
+        b.Nudge(n * push * (a.IsPlayer ? 1.7f : 1f));
     }
 
     void Contact(Ship Raider, float reach)

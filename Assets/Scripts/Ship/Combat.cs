@@ -114,7 +114,7 @@ public class Combat : MonoBehaviour
             bool done = false;
             foreach (var s in Ships)
             {
-                if (s == null || s == a.owner || s.Dead || !s.gameObject.activeInHierarchy) continue;
+                if (s == null || s == a.owner || s.Dead || !s.gameObject.activeInHierarchy || (a.owner != null && s.Team == a.owner.Team)) continue;
                 Vector3 lp = s.transform.InverseTransformPoint(p);
                 if (Mathf.Abs(lp.z) > 11f || lp.y < -1.5f || lp.y > 13f) continue;
                 float hw = ShipBuilder.HalfBeam(Mathf.Clamp01((lp.z + 10f) / 20f)) + 0.3f;

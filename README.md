@@ -1,4 +1,4 @@
-# The Spice Route: Across Seven Seas — Chapters I, II & III
+# The Spice Route: Across Seven Seas — The Complete Voyage (Chapters I–IV)
 
 ![The Spice Route](docs/banner.jpg)
 
@@ -37,6 +37,21 @@ ground you at low tide, so watch the tide gauge and cross at high water. In **Al
 the Pharos lighthouse, sell your cargo at the Great Marketplace, pay a harbour clerk for the truth,
 then return at night to slip past the lighthouse's spinning beam, free your father from the prison
 galley *Iron Ledger*, and escape the harbour with two raiders on your stern.
+
+## Chapter IV — Across Seven Seas (the finale)
+
+Pick **CHAPTER IV** on the title screen (or continue from Chapter III's ending).
+
+Raghavan is home, and the old chart points south, beyond the edge of every known map. Meet two
+**Guild ships** at the Cape of Lanterns. They join your fleet, follow your wake and fight beside you.
+Cross the **Storm Wall**, a storm that never ends over a field of reefs, by following a passage of
+ancient lamps that only the Era Shift reveals. Read the echo of the **Sunken Archive**, the drowned
+city where the first navigators recorded every route of the sea. Then sink the Grand Cartographer's
+flagship **The Last Map** and make the final choice. There are four endings: **Merchant King**,
+**Guardian of the Seas**, **The Great Navigator** and **The Broken Route**.
+
+New in Chapter IV: allied ships with their own AI, a localized storm region, a map that grows
+south past the old edge, a boss fleet battle, and a branching ending.
 
 ## Screenshots
 
@@ -124,7 +139,7 @@ upload it as an HTML game, and set the viewport to 1280 × 720 with fullscreen e
 The Windows player has two command-line modes, used to test the game and to make its marketing media:
 
 ```bash
-SpiceRoute.exe -autoplay [-tutorial] [-chapter 2|3] -shots <folder>
+SpiceRoute.exe -autoplay [-tutorial] [-chapter 2|3|4] [-choice 0-3] -shots <folder>
 ```
 
 A bot plays the whole chapter from the title screen to the ending. It logs every story step, flags any step where it gets stuck, dies or loses the HUD, and saves screenshots. See `Assets/Scripts/Gameplay/Autoplay.cs`.
@@ -141,7 +156,7 @@ Renders scripted cinematic shots at a locked 30 fps (1920×1080 frames plus 4K s
 | --- | --- |
 | `Assets/Scripts/Game.cs` | Bootstrap, game states, player input, combat input, checkpoints |
 | `Assets/Scripts/Gameplay` | Story beats, Era Shift, market and economy |
-| `Assets/Scripts/Ship` | Procedural ship builder, ship simulation, combat, raider AI |
+| `Assets/Scripts/Ship` | Procedural ship builder, ship simulation, combat, raider AI, allied fleet AI |
 | `Assets/Scripts/World` | Wave field, ocean, sky and weather, wind, terrain, props, world layout |
 | `Assets/Scripts/Audio` | Offline synthesiser and audio manager |
 | `Assets/Scripts/UI` | HUD and every screen, built in code |

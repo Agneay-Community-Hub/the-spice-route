@@ -327,6 +327,15 @@ public class Tutor : MonoBehaviour
         if (ch3 && Story.I.Step == 1 && !EraShift.I.Active && Dist2(p.transform.position, World.P("canal_mouth")) < 450f) return "> Press SHIFT to see the obelisks of the old canal";
         if (ch2 && Story.I.Step == 2 && SkyController.I.FogMul > 2f)
             return EraShift.I.Active ? "> Sail between the glowing beacon pairs" : "> Press SHIFT to see the ancient beacons";
+        bool ch4 = G.Chapter == 4;
+        if (ch4 && Story.I.Step == 2 && SkyController.I.FogMul > 2f)
+            return EraShift.I.Active ? "> Sail between the pairs of glowing lamps" : "> Press SHIFT to see the ancient lamps of the passage";
+        if (ch4 && Story.I.Step == 3)
+        {
+            if (!string.IsNullOrEmpty(HUD.I.Reading) && !EraShift.I.Active) return "> You are beside the ruins: press SHIFT";
+            if (HUD.I.Reading.StartsWith("Reading")) return p.SailLevel > 1 ? "> Reading... press S to slow down" : "> Reading... stay close until 100%";
+        }
+        if (ch4 && Story.I.Step == 1 && Story.I.FleetJoined == false && HUD.I.MarkerTarget.HasValue && Dist2(p.transform.position, HUD.I.MarkerTarget.Value) < 300f) return "> The two Guild ships are waiting by the gold diamond";
         if (ch2 && Story.I.Step == 5)
         {
             if (!string.IsNullOrEmpty(HUD.I.Reading) && !EraShift.I.Active) return "> You are beside the wreck: press SHIFT";

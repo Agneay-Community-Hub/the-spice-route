@@ -21,6 +21,8 @@ public class Ship : MonoBehaviour
     public float FireDamage = 0.7f;
     public float DamageTaken = 1f;
     public bool LanternOn = true;
+    public int Team;
+    public bool IgnoreReefs;
     Light lanternPoint;
 
     public void SetLantern(bool on)
@@ -191,7 +193,7 @@ public class Ship : MonoBehaviour
             Impact(worstP, Mathf.Abs(Speed), true);
         }
         // reefs
-        for (int i = 0; i < World.Rocks.Count; i++)
+        for (int i = 0; i < (IgnoreReefs ? 0 : World.Rocks.Count); i++)
         {
             Vector4 rk = World.Rocks[i];
             float dx = rk.x - planar.x, dz = rk.y - planar.z;

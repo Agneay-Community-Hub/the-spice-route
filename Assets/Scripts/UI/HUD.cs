@@ -54,8 +54,8 @@ public class HUD : MonoBehaviour
     CanvasGroup gameOver;
     CanvasGroup ending; RectTransform endRoute; Text endText, endStats;
 
-    public bool MarketOpen, ChartOpen, PauseOpen, CardsOpen, GameOverOpen, EndingOpen, TitleOpen, ControlsOpen;
-    public bool ModalOpen => MarketOpen || ChartOpen || PauseOpen || CardsOpen || GameOverOpen || EndingOpen || TitleOpen || ControlsOpen;
+    public bool MarketOpen, ChartOpen, PauseOpen, CardsOpen, GameOverOpen, EndingOpen, TitleOpen, ControlsOpen, ChoiceOpen;
+    public bool ModalOpen => MarketOpen || ChartOpen || PauseOpen || CardsOpen || GameOverOpen || EndingOpen || TitleOpen || ControlsOpen || ChoiceOpen;
 
     // dialogue state
     readonly Queue<(string sp, string tx, float dur)> lines = new Queue<(string, string, float)>();
@@ -141,6 +141,7 @@ public class HUD : MonoBehaviour
         BuildControls();
         BuildGameOver();
         BuildEnding();
+        BuildChoice();
         BuildCards();
         BuildTitle();
 
@@ -488,7 +489,7 @@ public class HUD : MonoBehaviour
         UIKit.Place((RectTransform)start.transform, 0f, 0.5f, 0f, 0.5f, 140, -110, 320, 64);
         var tut = UIKit.Btn(title.transform, UIKit.Spaced("TUTORIAL VOYAGE"), 20, () => onTutorial?.Invoke());
         UIKit.Place((RectTransform)tut.transform, 0f, 0.5f, 0f, 0.5f, 140, -186, 320, 54);
-        var tutNote = UIKit.Txt(title.transform, "TutNote", "guided lessons  ·  learn every control and win", 16, UIKit.Teal, TextAnchor.MiddleLeft, FontStyle.Italic);
+        var tutNote = UIKit.Txt(title.transform, "TutNote", "first time playing? start here  ·  it teaches every control", 16, UIKit.Teal, TextAnchor.MiddleLeft, FontStyle.Bold);
         UIKit.Place(tutNote.rectTransform, 0f, 0.5f, 0f, 0.5f, 476, -186, 520, 30);
         var ch3 = UIKit.Btn(title.transform, "CHAPTER III  ·  THE GREAT MARKETPLACE", 17, () => Game.I.LoadChapter(3));
         UIKit.Place((RectTransform)ch3.transform, 0f, 0.5f, 0f, 0.5f, 140, -318, 320, 54);
@@ -498,14 +499,16 @@ public class HUD : MonoBehaviour
         UIKit.Place((RectTransform)ch2.transform, 0f, 0.5f, 0f, 0.5f, 140, -252, 320, 54);
         var ch2Note = UIKit.Txt(title.transform, "Ch2Note", "the story continues  ·  stealth, fog and a flagship", 16, UIKit.Gold, TextAnchor.MiddleLeft, FontStyle.Italic);
         UIKit.Place(ch2Note.rectTransform, 0f, 0.5f, 0f, 0.5f, 476, -252, 520, 30);
+        var ch4 = UIKit.Btn(title.transform, "CHAPTER IV  ·  ACROSS SEVEN SEAS", 18, () => Game.I.LoadChapter(4));
+        UIKit.Place((RectTransform)ch4.transform, 0f, 0.5f, 0f, 0.5f, 140, -384, 320, 54);
+        var ch4Note = UIKit.Txt(title.transform, "Ch4Note", "the finale  ·  a Guild fleet, the Storm Wall, four endings", 16, UIKit.Gold, TextAnchor.MiddleLeft, FontStyle.Italic);
+        UIKit.Place(ch4Note.rectTransform, 0f, 0.5f, 0f, 0.5f, 476, -384, 620, 30);
         var ctr = UIKit.Btn(title.transform, UIKit.Spaced("CONTROLS"), 20, () => ShowControls(true));
-        UIKit.Place((RectTransform)ctr.transform, 0f, 0.5f, 0f, 0.5f, 140, -384, 155, 50);
+        UIKit.Place((RectTransform)ctr.transform, 0f, 0.5f, 0f, 0.5f, 140, -452, 155, 50);
         var qb = UIKit.Btn(title.transform, "GRAPHICS: HIGH", 20, null);
         qb.onClick.AddListener(() => { Game.I.ToggleQuality(); UIKit.SetLabel(qb, "GRAPHICS: " + (Game.I.HighQuality ? "HIGH" : "PERFORMANCE")); });
-        UIKit.Place((RectTransform)qb.transform, 0f, 0.5f, 0f, 0.5f, 305, -384, 155, 50);
+        UIKit.Place((RectTransform)qb.transform, 0f, 0.5f, 0f, 0.5f, 305, -452, 155, 50);
 
-        var newbie = UIKit.Txt(title.transform, "Newbie", "First time playing?  Choose  TUTORIAL VOYAGE  — it teaches every button as you go.", 20, UIKit.Teal, TextAnchor.MiddleLeft, FontStyle.Bold);
-        UIKit.Place(newbie.rectTransform, 0f, 0.5f, 0f, 0.5f, 140, -440, 1200, 30);
         var foot = UIKit.Txt(title.transform, "Foot", "GitHub Game Off 2026  ·  Theme: SHIFT  ·  Made with Unity 6  ·  every model, texture, sound and note generated in code", 16, UIKit.Muted, TextAnchor.MiddleLeft);
         UIKit.Place(foot.rectTransform, 0f, 0f, 0f, 0f, 140, 40, 1600, 26);
     }
@@ -763,6 +766,12 @@ public class HUD : MonoBehaviour
         Label("echo", "Isle of Echoes", new Vector3(-1500, 0, -100));
         Label("shoals", "Shoals of Thorns", new Vector3(-2020, 0, -360));
         Label("outpost", "Ras al-Mira", World.P("dock_outpost") + new Vector3(-150, 0, 0), 22);
+        if (Game.I != null && Game.I.Chapter == 4)
+        {
+            KnownPlaces.UnionWith(new[] { "echo", "shoals", "outpost" });
+            Label("storm", "THE STORM WALL", new Vector3(-800, 0, -1330), 24);
+            Label("archive", "The Sunken Archive", new Vector3(-760, 0, -2180), 22);
+        }
     }
 
     public HashSet<string> KnownPlaces = new HashSet<string> { "muziris", "malabar", "cape", "kadal" };
@@ -840,6 +849,49 @@ public class HUD : MonoBehaviour
         var credit = UIKit.Txt(ending.transform, "Credit", "THE SPICE ROUTE: ACROSS SEVEN SEAS  ·  A Game Off 2026 entry  ·  Thank you for playing", 16, UIKit.Muted, TextAnchor.MiddleCenter);
         UIKit.Place(credit.rectTransform, 0.5f, 0f, 0.5f, 0f, 0, 20, 1600, 26);
     }
+
+    CanvasGroup choice; Text choiceHead;
+    readonly List<Button> choiceBtns = new List<Button>();
+    readonly List<Text> choiceDesc = new List<Text>();
+    Action<int> choicePick;
+
+    void BuildChoice()
+    {
+        choice = MakeScreen("Choice", new Color(0.01f, 0.02f, 0.03f, 0.72f));
+        choiceHead = UIKit.Txt(choice.transform, "Head", "", 36, UIKit.Gold, TextAnchor.MiddleCenter, FontStyle.Bold);
+        UIKit.Place(choiceHead.rectTransform, 0.5f, 0.5f, 0.5f, 0.5f, 0, 330, 1500, 60);
+        var sub = UIKit.Txt(choice.transform, "Sub", "There is no wrong answer. Each choice leads to a different ending.", 20, UIKit.Muted, TextAnchor.MiddleCenter, FontStyle.Italic);
+        UIKit.Place(sub.rectTransform, 0.5f, 0.5f, 0.5f, 0.5f, 0, 280, 1400, 30);
+        for (int i = 0; i < 4; i++)
+        {
+            int idx = i;
+            float y = 170 - i * 130;
+            var panel = UIKit.Panel(choice.transform, "Opt" + i, new Color(0.04f, 0.05f, 0.07f, 0.92f), new Color(UIKit.Gold.r, UIKit.Gold.g, UIKit.Gold.b, 0.35f));
+            UIKit.Place(panel, 0.5f, 0.5f, 0.5f, 0.5f, 0, y, 1100, 112);
+            var b = UIKit.Btn(panel, "", 22, () => { if (ChoiceOpen) { ChoiceOpen = false; Show(choice, false); choicePick?.Invoke(idx); } });
+            UIKit.Place((RectTransform)b.transform, 0f, 0.5f, 0f, 0.5f, 24, 0, 360, 62);
+            var d = UIKit.Txt(panel, "D", "", 20, UIKit.Parch, TextAnchor.MiddleLeft, FontStyle.Italic);
+            UIKit.Place(d.rectTransform, 0f, 0.5f, 0f, 0.5f, 410, 0, 660, 100);
+            choiceBtns.Add(b);
+            choiceDesc.Add(d);
+        }
+    }
+
+    public void ShowChoice(string heading, string[] titles, string[] desc, Action<int> pick)
+    {
+        choiceHead.text = UIKit.Spaced(heading);
+        for (int i = 0; i < choiceBtns.Count; i++)
+        {
+            UIKit.SetLabel(choiceBtns[i], i < titles.Length ? titles[i] : "");
+            choiceDesc[i].text = i < desc.Length ? desc[i] : "";
+        }
+        choicePick = pick;
+        ChoiceOpen = true;
+        Show(choice, true);
+    }
+
+    /// <summary>Used by the test bot.</summary>
+    public void PickChoice(int i) { if (ChoiceOpen && i >= 0 && i < choiceBtns.Count) choiceBtns[i].onClick.Invoke(); }
 
     public IEnumerator PlayEnding(string text, string stats, string nextLabel = null, System.Action next = null)
     {

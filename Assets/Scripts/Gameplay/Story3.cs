@@ -294,9 +294,9 @@ public partial class Story
                        "THE RESCUE           " + (Unseen ? "Unseen" : "Spotted") + "\n" +
                        "RAIDERS SUNK        " + ((RaiderSunk ? 1 : 0) + (FlagshipSunk ? 1 : 0)) + " / 2\n" +
                        "HULL                    " + Mathf.RoundToInt(G.Player.HP / G.Player.MaxHP * 100f) + "%\n\n" +
-                       "<color=#7fe8e0>TO BE CONTINUED IN CHAPTER IV: ACROSS SEVEN SEAS</color>";
+                       "<color=#7fe8e0>CONTINUE IN CHAPTER IV: ACROSS SEVEN SEAS</color>";
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        yield return H.PlayEnding(text, stats, "MAIN MENU", () => G.LoadChapter(0));
+        yield return H.PlayEnding(text, stats, "CONTINUE TO CHAPTER IV", () => G.LoadChapter(4));
     }
 }

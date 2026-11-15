@@ -21,6 +21,7 @@ public class Autoplay : MonoBehaviour
     readonly float[] limits = { 150, 150, 420, 420, 360, 360, 600, 480, 360 };
     readonly float[] limits2 = { 150, 150, 420, 300, 480, 300, 480 };
     readonly float[] limits3 = { 150, 360, 480, 300, 480, 420 };
+    readonly float[] limits4 = { 150, 300, 600, 300, 600, 300 };
 
     static Game G => Game.I;
 
@@ -57,7 +58,7 @@ public class Autoplay : MonoBehaviour
         yield return new WaitForSecondsRealtime(3f);
         Shot("title");
         yield return new WaitForSecondsRealtime(0.5f);
-        Log("Starting " + (G.Chapter == 2 ? "CHAPTER II" : tutorial ? "TUTORIAL VOYAGE" : "normal voyage"));
+        Log("Starting " + (G.Chapter >= 2 ? "CHAPTER " + G.Chapter : tutorial ? "TUTORIAL VOYAGE" : "normal voyage"));
         G.StartFromBot(tutorial);
     }
 
@@ -75,6 +76,7 @@ public class Autoplay : MonoBehaviour
             return;
         }
         if (HUD.I.MarketOpen && !marketBusy) StartCoroutine(Trade());
+        if (HUD.I.ChoiceOpen && !marketBusy) StartCoroutine(Choose());
 
         int s = Story.I.Step;
         if (s != lastStep && G.State != Game.GameState.Title)
@@ -84,7 +86,7 @@ public class Autoplay : MonoBehaviour
             stepTime = 0;
         }
         stepTime += Time.deltaTime;
-        var lim = G.Chapter == 3 ? limits3 : G.Chapter == 2 ? limits2 : limits;
+        var lim = G.Chapter == 4 ? limits4 : G.Chapter == 3 ? limits3 : G.Chapter == 2 ? limits2 : limits;
         if (s >= 0 && s < lim.Length && stepTime > lim[s] && G.State == Game.GameState.Sailing)
         {
             issues.Add("STUCK in step " + s + " (objective: " + Objective() + ")");
@@ -138,6 +140,21 @@ public class Autoplay : MonoBehaviour
         marketBusy = false;
     }
 
+    IEnumerator Choose()
+    {
+        marketBusy = true;
+        yield return new WaitForSecondsRealtime(1.5f);
+        Shot("choice");
+        int pick = 2;
+        var args = System.Environment.GetCommandLineArgs();
+        int ci = System.Array.IndexOf(args, "-choice");
+        if (ci >= 0 && ci + 1 < args.Length) int.TryParse(args[ci + 1], out pick);
+        Log("Choosing ending " + pick + ": " + Story.ChoiceTitles[Mathf.Clamp(pick, 0, 3)]);
+        HUD.I.PickChoice(Mathf.Clamp(pick, 0, 3));
+        yield return new WaitForSecondsRealtime(1f);
+        marketBusy = false;
+    }
+
     IEnumerator Finish()
     {
         Log("WIN — reached the ending.");
@@ -146,7 +163,7 @@ public class Autoplay : MonoBehaviour
         yield return new WaitForSecondsRealtime(14f);
         Shot("ending_screen");
         int profit = Mathf.RoundToInt(G.Market.Earned - G.Market.Spent);
-        Log("RESULT  chapter " + G.Chapter + "  time " + G.PlayTime.ToString("0") + "s  profit " + profit + "  echoes " + Story.I.Stones + "  raider " + (Story.I.RaiderSunk ? "sunk" : "outrun") + (G.Chapter == 2 ? "  gate " + (Story.I.Unseen ? "unseen" : "spotted") + "  flagship " + (Story.I.FlagshipSunk ? "sunk" : "escaped") : "") + "  hull " + Mathf.RoundToInt(G.Player.HP));
+        Log("RESULT  chapter " + G.Chapter + "  time " + G.PlayTime.ToString("0") + "s  profit " + profit + "  echoes " + Story.I.Stones + "  raider " + (Story.I.RaiderSunk ? "sunk" : "outrun") + (G.Chapter == 2 ? "  gate " + (Story.I.Unseen ? "unseen" : "spotted") + "  flagship " + (Story.I.FlagshipSunk ? "sunk" : "escaped") : "") + (G.Chapter == 4 ? "  lastmap " + (Story.I.LastMapSunk ? "sunk" : "escaped") + "  allies " + (G.Allies == null ? 0 : System.Array.FindAll(G.Allies, x => x != null && !x.Dead).Length) + "  ending " + Story.I.Choice : "") + "  hull " + Mathf.RoundToInt(G.Player.HP));
         Log(issues.Count == 0 ? "NO ISSUES" : "ISSUES:\n  " + string.Join("\n  ", issues));
         yield return new WaitForSecondsRealtime(1f);
         Application.Quit();
@@ -164,6 +181,8 @@ public class Autoplay : MonoBehaviour
         var raider = G.CurrentEnemy;
         bool ch2 = G.Chapter == 2;
         bool ch3 = G.Chapter == 3;
+        bool ch4 = G.Chapter == 4;
+        if (ch4) ch2 = false;
         bool stealth = G.Chapter >= 2 && Stealth.I != null && Stealth.I.Active && !Stealth.I.Spotted;
 
         if (G.CombatEnabled && raider != null && !stealth)
@@ -187,15 +206,16 @@ public class Autoplay : MonoBehaviour
         {
             rud = G.BotRudder(m.Value);
             float dist = Vector3.Distance(new Vector3(m.Value.x, 0, m.Value.z), p.Planar);
-            bool docking = ch3 ? s == 3 : ch2 ? (s == 1 || s == 3) : (s == 1 || s == 8);
+            bool docking = ch4 ? (s == 5 || s == 3) : ch3 ? s == 3 : ch2 ? (s == 1 || s == 3) : (s == 1 || s == 8);
             if (docking && dist < 90f) sail = dist < 45f ? 0 : 1;
-            if (!ch2 && s == 3) sail = 2;
-            if ((!ch2 && s == 6) || (ch2 && s == 5))
+            if (!ch2 && !ch4 && s == 3) sail = 2;
+            if ((!ch2 && !ch4 && s == 6) || (ch2 && s == 5) || (ch4 && s == 3))
             {
                 if (dist < 120f) sail = 1;
                 if (dist < 75f) sail = 0;
             }
-            if (!ch2 && s == 7) sail = 2;
+            if (!ch2 && !ch4 && s == 7) sail = 2;
+            if (ch4 && s == 2 && SkyController.I.FogMul > 2f) sail = 2;
             if (ch2 && s == 2 && SkyController.I.FogMul > 2f) sail = 2;
             if (ch3 && s == 2)
             {
@@ -209,11 +229,12 @@ public class Autoplay : MonoBehaviour
                 if (p.LanternOn) p.SetLantern(false);
                 sail = Stealth.I.InLight ? 3 : 2;
             }
-            if (ch3 && s == 4 && dist < 80f) sail = 0;
+            if (ch3 && s == 4 && dist < 80f) sail = dist < 45f ? 0 : 1;
         }
         else sail = 0;
 
-        int readStep = ch2 ? 5 : 6;
+        int readStep = ch4 ? 3 : ch2 ? 5 : 6;
+        if (ch4 && s == 2 && SkyController.I.FogMul > 2f && !era.Active && era.Energy > 0.5f) era.Toggle();
         if (ch2 && s == 2 && SkyController.I.FogMul > 2f && !era.Active && era.Energy > 0.5f) era.Toggle();
         if (s == readStep && era.Unlocked)
         {
@@ -222,7 +243,7 @@ public class Autoplay : MonoBehaviour
             else if (reading && !era.Active && era.Energy > 0.15f) era.Toggle();
             else if (!reading && era.Active && era.Energy < 0.9f) era.Deactivate();
         }
-        if (!ch2 && s == 7 && !era.Active && era.Energy > 0.7f) era.Toggle();
+        if (!ch2 && !ch4 && s == 7 && !era.Active && era.Energy > 0.7f) era.Toggle();
 
         if (G.InInteractRange && p.Speed < 6f) G.TryInteract();
 
