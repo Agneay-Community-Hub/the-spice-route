@@ -233,6 +233,7 @@ public partial class Story
         Vector3 spawn = pp + new Vector3(-260f, 0, 0);
         if (World.LandHeight(spawn.x, spawn.z) > -6f) spawn = pp + new Vector3(220f, 0, 0);
         G.SpawnRaider(spawn, Mathf.Atan2(pp.x - spawn.x, pp.z - spawn.z) * Mathf.Rad2Deg);
+        G.RaiderAI.VolleyDamage = G.Chapter == 3 ? 1.9f : 2.6f;
         G.CombatEnabled = true;
         H.EnemyTarget = G.Raider;
         H.EnemyName = "CARTOGRAPHER RAIDER";
@@ -372,6 +373,6 @@ public partial class Story
                        "<color=#7fe8e0>TO BE CONTINUED IN CHAPTER III: THE GREAT MARKETPLACE</color>";
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        yield return H.PlayEnding(text, stats, "MAIN MENU", () => G.LoadChapter(0));
+        yield return H.PlayEnding(text, stats, "CONTINUE TO CHAPTER III", () => G.LoadChapter(3));
     }
 }

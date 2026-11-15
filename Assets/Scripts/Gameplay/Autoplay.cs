@@ -20,6 +20,7 @@ public class Autoplay : MonoBehaviour
     float hudMissing;
     readonly float[] limits = { 150, 150, 420, 420, 360, 360, 600, 480, 360 };
     readonly float[] limits2 = { 150, 150, 420, 300, 480, 300, 480 };
+    readonly float[] limits3 = { 150, 360, 480, 300, 480, 420 };
 
     static Game G => Game.I;
 
@@ -83,7 +84,7 @@ public class Autoplay : MonoBehaviour
             stepTime = 0;
         }
         stepTime += Time.deltaTime;
-        var lim = G.Chapter == 2 ? limits2 : limits;
+        var lim = G.Chapter == 3 ? limits3 : G.Chapter == 2 ? limits2 : limits;
         if (s >= 0 && s < lim.Length && stepTime > lim[s] && G.State == Game.GameState.Sailing)
         {
             issues.Add("STUCK in step " + s + " (objective: " + Objective() + ")");
@@ -162,7 +163,8 @@ public class Autoplay : MonoBehaviour
         Vector3? m = HUD.I.MarkerTarget;
         var raider = G.CurrentEnemy;
         bool ch2 = G.Chapter == 2;
-        bool stealth = ch2 && Stealth.I != null && Stealth.I.Active && !Stealth.I.Spotted;
+        bool ch3 = G.Chapter == 3;
+        bool stealth = G.Chapter >= 2 && Stealth.I != null && Stealth.I.Active && !Stealth.I.Spotted;
 
         if (G.CombatEnabled && raider != null && !stealth)
         {
@@ -185,7 +187,7 @@ public class Autoplay : MonoBehaviour
         {
             rud = G.BotRudder(m.Value);
             float dist = Vector3.Distance(new Vector3(m.Value.x, 0, m.Value.z), p.Planar);
-            bool docking = ch2 ? (s == 1 || s == 3) : (s == 1 || s == 8);
+            bool docking = ch3 ? s == 3 : ch2 ? (s == 1 || s == 3) : (s == 1 || s == 8);
             if (docking && dist < 90f) sail = dist < 45f ? 0 : 1;
             if (!ch2 && s == 3) sail = 2;
             if ((!ch2 && s == 6) || (ch2 && s == 5))
@@ -195,11 +197,19 @@ public class Autoplay : MonoBehaviour
             }
             if (!ch2 && s == 7) sail = 2;
             if (ch2 && s == 2 && SkyController.I.FogMul > 2f) sail = 2;
+            if (ch3 && s == 2)
+            {
+                sail = 2;
+                float bd = Story.NearestBar(p.transform.position, out Vector3 bar);
+                Vector3 toBar = bar - p.transform.position; toBar.y = 0;
+                if (bd < 110f && Vector3.Dot(toBar, p.Fwd) > 0 && !Story.TideHigh) sail = 0;
+            }
             if (stealth)
             {
                 if (p.LanternOn) p.SetLantern(false);
                 sail = Stealth.I.InLight ? 3 : 2;
             }
+            if (ch3 && s == 4 && dist < 80f) sail = 0;
         }
         else sail = 0;
 

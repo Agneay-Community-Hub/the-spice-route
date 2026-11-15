@@ -133,13 +133,13 @@ public class Game : MonoBehaviour
         WaveField.Push(0, 0.55f);
         var bootArgs = System.Environment.GetCommandLineArgs();
         int ci = System.Array.IndexOf(bootArgs, "-chapter");
-        if (ci >= 0 && ci + 1 < bootArgs.Length && bootArgs[ci + 1] == "2") PendingChapter = 2;
-        Chapter = PendingChapter == 2 ? 2 : 1;
+        if (ci >= 0 && ci + 1 < bootArgs.Length && (bootArgs[ci + 1] == "2" || bootArgs[ci + 1] == "3")) PendingChapter = int.Parse(bootArgs[ci + 1]);
+        Chapter = PendingChapter == 2 || PendingChapter == 3 ? PendingChapter : 1;
         yield return World.Build(transform, (p, s) => HUD.I.SetLoading(0.05f + p * 0.7f, s), Chapter);
 
         Player = Ship.Create(ShipBuilder.Style.Kaveri, transform, "Kaveri", true);
         Player.OceanSlot = 0;
-        Player.Teleport(World.P("start"), Chapter == 2 ? 180f : 270f);
+        Player.Teleport(World.P("start"), Chapter == 3 ? 90f : Chapter == 2 ? 180f : 270f);
         Player.OnDamaged += a => { damageFlash = Mathf.Min(1f, damageFlash + a / 18f); CameraRig.I.Shake(Mathf.Clamp01(a / 25f)); };
         Player.OnDeath += () => StartCoroutine(PlayerLost());
         Combat.I.Ships.Add(Player);
@@ -177,6 +177,24 @@ public class Game : MonoBehaviour
             Flagship.gameObject.SetActive(false);
             Stealth.Create(transform);
         }
+        if (Chapter == 3)
+        {
+            Market.UseAlexGoods();
+            Market.Gold = 120;
+            Flagship = Ship.Create(ShipBuilder.Style.Raider, transform, "Raider II", false);
+            Flagship.OceanSlot = 2;
+            Flagship.MaxSpeed = 14f;
+            Flagship.MinDrive = 6.5f;
+            Flagship.FireDamage = 1.2f;
+            FlagshipAI = Flagship.gameObject.AddComponent<EnemyAI>();
+            FlagshipAI.Me = Flagship;
+            FlagshipAI.Target = Player;
+            FlagshipAI.VolleyDamage = 2.0f;
+            FlagshipAI.Accuracy = 8.5f;
+            Combat.I.Ships.Add(Flagship);
+            Flagship.gameObject.SetActive(false);
+            Stealth.Create(transform);
+        }
 
         rig.Target = Player;
         HUD.I.InitChart();
@@ -187,7 +205,7 @@ public class Game : MonoBehaviour
         yield return null;
         var args = System.Environment.GetCommandLineArgs();
         if (System.Array.IndexOf(args, "-capture") >= 0) { HUD.I.HideLoading(); gameObject.AddComponent<Director>(); yield break; }
-        if (Chapter == 2) StartChapter2(); else Title();
+        if (Chapter == 2) StartChapter2(); else if (Chapter == 3) StartChapter3(); else Title();
         if (System.Array.IndexOf(args, "-autoplay") >= 0) gameObject.AddComponent<Autoplay>();
     }
 
@@ -222,6 +240,34 @@ public class Game : MonoBehaviour
         if (State != GameState.Title) return;
         HUD.I.ShowTitle(false);
         StartCoroutine(Prologue());
+    }
+
+    void StartChapter3()
+    {
+        State = GameState.Title;
+        HUD.I.HideLoading();
+        HUD.I.ShowTitle(false);
+        StartCoroutine(Prologue3());
+    }
+
+    IEnumerator Prologue3()
+    {
+        State = GameState.Cutscene;
+        HUD.I.Letterbox(true);
+        SkyController.I.Go(SkyController.Preset.Dawn, 0f);
+        BaseTrack = AudioMan.Track.Mystery;
+        Vector3 dock = World.P("dock_berenike");
+        CameraRig.I.Shot(dock + new Vector3(180, 35, 120), dock + new Vector3(-30, 6, -10), 42, 0.01f);
+        CameraRig.I.Drift(new Vector3(-3f, -0.2f, -2f));
+        var cards = new[]
+        {
+            new[] { "CHAPTER III", "THE GREAT MARKETPLACE" },
+            new[] { "BERENIKE  ·  THE RED SEA", "The ledger of the Black Compass named one prisoner:\nRaghavan of Muziris, sent north to Alexandria." },
+            new[] { "ALEXANDRIA", "The greatest port in the world, crowned by the Pharos lighthouse,\nand the place where the Hidden Cartographers keep their secrets." },
+            new[] { "", "The only fast way there was lost to the sand long ago." },
+        };
+        yield return HUD.I.PlayCards(cards);
+        Story.Begin(0, false);
     }
 
     void StartChapter2()
@@ -323,12 +369,12 @@ public class Game : MonoBehaviour
         if (FlagshipAI != null) FlagshipAI.Active = false;
     }
 
-    public void SpawnFlagship(Vector3 pos, float heading)
+    public void SpawnFlagship(Vector3 pos, float heading, float hp = 240f)
     {
         Flagship.gameObject.SetActive(true);
-        Flagship.ResetState(240f);
-        Flagship.MaxHP = 240f;
-        Flagship.HP = 240f;
+        Flagship.ResetState(hp);
+        Flagship.MaxHP = hp;
+        Flagship.HP = hp;
         Flagship.Teleport(pos, heading);
         Flagship.SailLevel = 3;
         Flagship.SailAmt = 1f;
@@ -412,6 +458,7 @@ public class Game : MonoBehaviour
         float era = EraShift.I != null ? EraShift.I.Amount : 0f;
         WaveField.Push(Time.time, Mathf.Lerp(0.55f, 1.65f, storm) * Mathf.Lerp(1f, 0.55f, era));
         Wind.Tick(dt, Time.time);
+        Shader.SetGlobalFloat("_TideG", World.Tide);
         if (State == GameState.Loading) return;
 
         // music
@@ -469,7 +516,7 @@ public class Game : MonoBehaviour
 
     static bool Blocked(Vector3 p)
     {
-        if (World.LandHeight(p.x, p.z) > -3f) return true;
+        if (World.LandHeight(p.x, p.z) > -3f + World.Tide) return true;
         for (int i = 0; i < World.Rocks.Count; i++)
         {
             var k = World.Rocks[i];
@@ -510,7 +557,7 @@ public class Game : MonoBehaviour
         for (float s = 12f; s <= range; s += 6f)
         {
             Vector3 p = Player.Planar + f * s;
-            if (World.LandHeight(p.x, p.z) > -1.6f) return true;
+            if (World.LandHeight(p.x, p.z) > -1.6f + World.Tide) return true;
             for (int i = 0; i < World.Rocks.Count; i++)
             {
                 var k = World.Rocks[i];
@@ -542,7 +589,7 @@ public class Game : MonoBehaviour
 
     public void StartFromBot(bool tutorial)
     {
-        if (State != GameState.Title || Chapter == 2) return;
+        if (State != GameState.Title || Chapter >= 2) return;
         if (tutorial) StartTutorial(); else StartGame();
     }
 

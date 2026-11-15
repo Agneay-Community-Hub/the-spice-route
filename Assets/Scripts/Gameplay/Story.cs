@@ -27,14 +27,14 @@ public partial class Story : MonoBehaviour
 
     IEnumerator Run(int step, bool restart)
     {
-        int last = G.Chapter == 2 ? 6 : 8;
+        int last = G.Chapter == 3 ? 5 : G.Chapter == 2 ? 6 : 8;
         for (int s = step; s <= last; s++)
         {
             Step = s;
             G.Checkpoint = s;
-            yield return G.Chapter == 2 ? Beat2(s, restart && s == step) : Beat(s, restart && s == step);
+            yield return G.Chapter == 3 ? Beat3(s, restart && s == step) : G.Chapter == 2 ? Beat2(s, restart && s == step) : Beat(s, restart && s == step);
         }
-        yield return G.Chapter == 2 ? Ending2() : Ending();
+        yield return G.Chapter == 3 ? Ending3() : G.Chapter == 2 ? Ending2() : Ending();
     }
 
     IEnumerator Beat(int s, bool restart)

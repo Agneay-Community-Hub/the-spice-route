@@ -20,6 +20,7 @@ public class SkyController : MonoBehaviour
     public float Storm, StormTarget;
     public float Era;
     public float FogMul = 1f;
+    public bool IsNight => cur.night > 0.5f;
     public Color FogTint = Color.clear;
     float flash, nextLightning = 8f;
     ParticleSystem rain;

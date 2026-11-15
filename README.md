@@ -1,4 +1,4 @@
-# The Spice Route: Across Seven Seas — Chapters I & II
+# The Spice Route: Across Seven Seas — Chapters I, II & III
 
 ![The Spice Route](docs/banner.jpg)
 
@@ -25,6 +25,18 @@ last battle, and face the flagship **Black Compass** at dawn.
 New in Chapter II: night and fog weather, **lantern stealth** (press **L** to douse your lantern;
 a detection meter fills while you are in a beam or a patrol's lantern light), a boss ship with an
 escort, new goods, and a new map of the Gulf of Aden and the Red Sea mouth.
+
+## Chapter III — The Great Marketplace
+
+Pick **CHAPTER III** on the title screen (or continue from Chapter II's ending).
+
+The Black Compass's ledger says Raghavan is a prisoner in Alexandria. Sail north from Berenike up
+the Red Sea and into the long-silted **Canal of the Pharaohs**, where the Era Shift reveals the
+obelisks of the old kings. The new **Tide Shift** mechanic makes the sea rise and fall: sandbars
+ground you at low tide, so watch the tide gauge and cross at high water. In **Alexandria**, beneath
+the Pharos lighthouse, sell your cargo at the Great Marketplace, pay a harbour clerk for the truth,
+then return at night to slip past the lighthouse's spinning beam, free your father from the prison
+galley *Iron Ledger*, and escape the harbour with two raiders on your stern.
 
 ## Screenshots
 
@@ -112,7 +124,7 @@ upload it as an HTML game, and set the viewport to 1280 × 720 with fullscreen e
 The Windows player has two command-line modes, used to test the game and to make its marketing media:
 
 ```bash
-SpiceRoute.exe -autoplay [-tutorial] [-chapter 2] -shots <folder>
+SpiceRoute.exe -autoplay [-tutorial] [-chapter 2|3] -shots <folder>
 ```
 
 A bot plays the whole chapter from the title screen to the ending. It logs every story step, flags any step where it gets stuck, dies or loses the HUD, and saves screenshots. See `Assets/Scripts/Gameplay/Autoplay.cs`.

@@ -67,7 +67,7 @@ public static class WaveField
             px = x - d.x;
             pz = z - d.z;
         }
-        return Displacement(px, pz).y;
+        return Displacement(px, pz).y + World.Tide;
     }
 
     public static float HeightAt(Vector3 p) => HeightAt(p.x, p.z);

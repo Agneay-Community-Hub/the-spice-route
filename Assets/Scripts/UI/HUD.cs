@@ -68,6 +68,9 @@ public class HUD : MonoBehaviour
     public Ship EnemyTarget;
     public string EnemyName = "CARTOGRAPHER RAIDER";
     public bool ShowStealth;
+    public bool ShowTide;
+    Text tideText;
+    float tidePrev;
     CanvasGroup stealthGroup; Image stealthFill; Text stealthLabel, lanternLabel;
     Button endNext;
     System.Action endNextAction;
@@ -316,6 +319,8 @@ public class HUD : MonoBehaviour
         UIKit.Place(stealthFill.rectTransform, 0.5f, 1f, 0.5f, 1f, 0, -30, 360, 10);
         stealthFill.type = Image.Type.Filled;
         stealthFill.fillMethod = Image.FillMethod.Horizontal;
+        tideText = UIKit.Txt(hud, "Tide", "", 22, UIKit.Teal, TextAnchor.MiddleCenter, FontStyle.Bold);
+        UIKit.Place(tideText.rectTransform, 0.5f, 1f, 0.5f, 1f, 0, -104, 900, 30);
         lanternLabel = UIKit.Txt(sr, "Lantern", "", 17, UIKit.Parch, TextAnchor.MiddleCenter, FontStyle.Italic);
         UIKit.Place(lanternLabel.rectTransform, 0.5f, 1f, 0.5f, 1f, 0, -52, 520, 24);
 
@@ -485,18 +490,22 @@ public class HUD : MonoBehaviour
         UIKit.Place((RectTransform)tut.transform, 0f, 0.5f, 0f, 0.5f, 140, -186, 320, 54);
         var tutNote = UIKit.Txt(title.transform, "TutNote", "guided lessons  ·  learn every control and win", 16, UIKit.Teal, TextAnchor.MiddleLeft, FontStyle.Italic);
         UIKit.Place(tutNote.rectTransform, 0f, 0.5f, 0f, 0.5f, 476, -186, 520, 30);
+        var ch3 = UIKit.Btn(title.transform, "CHAPTER III  ·  THE GREAT MARKETPLACE", 17, () => Game.I.LoadChapter(3));
+        UIKit.Place((RectTransform)ch3.transform, 0f, 0.5f, 0f, 0.5f, 140, -318, 320, 54);
+        var ch3Note = UIKit.Txt(title.transform, "Ch3Note", "the canal, the tides and Alexandria", 16, UIKit.Gold, TextAnchor.MiddleLeft, FontStyle.Italic);
+        UIKit.Place(ch3Note.rectTransform, 0f, 0.5f, 0f, 0.5f, 476, -318, 520, 30);
         var ch2 = UIKit.Btn(title.transform, "CHAPTER II  ·  THE GATE OF TEARS", 18, () => Game.I.LoadChapter(2));
         UIKit.Place((RectTransform)ch2.transform, 0f, 0.5f, 0f, 0.5f, 140, -252, 320, 54);
         var ch2Note = UIKit.Txt(title.transform, "Ch2Note", "the story continues  ·  stealth, fog and a flagship", 16, UIKit.Gold, TextAnchor.MiddleLeft, FontStyle.Italic);
         UIKit.Place(ch2Note.rectTransform, 0f, 0.5f, 0f, 0.5f, 476, -252, 520, 30);
         var ctr = UIKit.Btn(title.transform, UIKit.Spaced("CONTROLS"), 20, () => ShowControls(true));
-        UIKit.Place((RectTransform)ctr.transform, 0f, 0.5f, 0f, 0.5f, 140, -318, 320, 50);
+        UIKit.Place((RectTransform)ctr.transform, 0f, 0.5f, 0f, 0.5f, 140, -384, 155, 50);
         var qb = UIKit.Btn(title.transform, "GRAPHICS: HIGH", 20, null);
         qb.onClick.AddListener(() => { Game.I.ToggleQuality(); UIKit.SetLabel(qb, "GRAPHICS: " + (Game.I.HighQuality ? "HIGH" : "PERFORMANCE")); });
-        UIKit.Place((RectTransform)qb.transform, 0f, 0.5f, 0f, 0.5f, 140, -380, 320, 50);
+        UIKit.Place((RectTransform)qb.transform, 0f, 0.5f, 0f, 0.5f, 305, -384, 155, 50);
 
         var newbie = UIKit.Txt(title.transform, "Newbie", "First time playing?  Choose  TUTORIAL VOYAGE  — it teaches every button as you go.", 20, UIKit.Teal, TextAnchor.MiddleLeft, FontStyle.Bold);
-        UIKit.Place(newbie.rectTransform, 0f, 0.5f, 0f, 0.5f, 140, -436, 1200, 30);
+        UIKit.Place(newbie.rectTransform, 0f, 0.5f, 0f, 0.5f, 140, -440, 1200, 30);
         var foot = UIKit.Txt(title.transform, "Foot", "GitHub Game Off 2026  ·  Theme: SHIFT  ·  Made with Unity 6  ·  every model, texture, sound and note generated in code", 16, UIKit.Muted, TextAnchor.MiddleLeft);
         UIKit.Place(foot.rectTransform, 0f, 0f, 0f, 0f, 140, 40, 1600, 26);
     }
@@ -721,6 +730,19 @@ public class HUD : MonoBehaviour
             Vector2 pos = ChartPos(world);
             UIKit.Place(t.rectTransform, 0f, 0f, 0.5f, 0.5f, pos.x, pos.y + 34, 300, 30);
             chartLabels.Add((t, key));
+        }
+        if (Game.I != null && Game.I.Chapter == 3)
+        {
+            KnownPlaces = new HashSet<string> { "berenike", "redsea", "egypt", "canal", "lake", "alex", "pharos", "med" };
+            Label("berenike", "Berenike", World.P("dock_berenike") + new Vector3(-120, 0, 0), 22);
+            Label("redsea", "RED SEA", new Vector3(100, 0, -300), 28);
+            Label("egypt", "EGYPT", new Vector3(-1100, 0, 300), 30);
+            Label("canal", "Canal of the Pharaohs", new Vector3(-80, 0, 760), 20);
+            Label("lake", "Bitter Lake", new Vector3(-330, 0, 900), 18);
+            Label("alex", "Alexandria", new Vector3(-1300, 0, 1300), 24);
+            Label("pharos", "Pharos", new Vector3(-1250, 0, 1790), 18);
+            Label("med", "THE GREAT SEA", new Vector3(-700, 0, 2100), 26);
+            return;
         }
         if (Game.I != null && Game.I.Chapter == 2)
         {
@@ -1095,6 +1117,17 @@ public class HUD : MonoBehaviour
         }
         else reticle.gameObject.SetActive(false);
 
+        if (ShowTide && !ModalOpen)
+        {
+            float tide = World.Tide;
+            bool high = tide > 1.0f;
+            float prev = tidePrev; tidePrev = tide;
+            string trend = tide > prev ? "rising" : "falling";
+            int bars = Mathf.Clamp(Mathf.RoundToInt((tide + 0.9f) / 2.6f * 10f), 0, 10);
+            tideText.text = "TIDE  " + new string('|', bars) + new string('.', 10 - bars) + "  " + (high ? "HIGH  ·  sandbars are covered, cross now!" : "LOW  ·  " + trend + "  ·  wait before sandbars");
+            tideText.color = high ? UIKit.Teal : UIKit.Gold;
+        }
+        else tideText.text = "";
         stealthGroup.alpha = Mathf.MoveTowards(stealthGroup.alpha, ShowStealth && !ModalOpen ? 1f : 0f, dt * 3f);
         if (ShowStealth && Stealth.I != null)
         {

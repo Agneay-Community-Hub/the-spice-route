@@ -181,7 +181,7 @@ public class Ship : MonoBehaviour
             float h = World.LandHeight(p.x, p.z);
             if (h > worst) { worst = h; worstP = p; }
         }
-        const float draft = -1.4f;
+        float draft = -1.4f + World.Tide;
         if (worst > draft)
         {
             Vector3 g = World.LandGradient(worstP.x, worstP.z);

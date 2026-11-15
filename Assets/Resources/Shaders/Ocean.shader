@@ -28,7 +28,7 @@ Shader "SR/Ocean"
             float4 _Waves[6];
             float _WaveTime, _WaveAmp;
             float4 _SunDirG, _SunColorG, _SkyZenithG, _SkyHorizonG;
-            float _SunVisG, _StormG, _EraShiftG, _DayLightG;
+            float _SunVisG, _StormG, _EraShiftG, _DayLightG, _TideG;
             float4 _ShipA, _ShipB, _ShipC, _ShipSpeeds;
             float4 _DeepColor, _MidColor, _ShallowColor, _SSSColor, _FoamColor;
             sampler2D _NormalTex, _NoiseTex;
@@ -131,6 +131,7 @@ Shader "SR/Ocean"
                 float dist = distance(wp.xz, _WorldSpaceCameraPos.xz);
                 float3 d = GerstnerDisp(wp.xz, dist);
                 float3 p = wp + d;
+                p.y += _TideG;
                 o.wpos = p;
                 o.base = float4(wp.xz, dist, d.y);
                 o.pos = mul(UNITY_MATRIX_VP, float4(p, 1.0));

@@ -88,7 +88,9 @@ public static partial class World
         Root.SetParent(parent, false);
         Islands.Clear(); Rocks.Clear(); Points.Clear(); EchoStones.Clear(); Channel.Clear(); RouteMarkers.Clear(); EchoMotes.Clear();
         Beacons.Clear(); Patrols.Clear(); FogChannel.Clear();
+        Tide = 0f; SandBars.Clear(); Canal.Clear();
         if (chapter == 2) { yield return BuildChapter2(progress); yield break; }
+        if (chapter == 3) { yield return BuildChapter3(progress); yield break; }
         ChartRect = new Rect(-2900, -1350, 3700, 2600);
 
         progress(0.05f, "Raising the Malabar coast");

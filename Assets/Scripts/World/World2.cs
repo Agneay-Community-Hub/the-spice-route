@@ -8,6 +8,8 @@ public class BeaconDef
     public float YawCenter, Sweep, Speed, Phase, Range, HalfAngle;
     public Transform Cone;
     public float Yaw;
+    public bool Spin;
+    public float Pitch = 4f;
 }
 
 public class PatrolDef

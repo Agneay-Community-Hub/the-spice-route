@@ -29,8 +29,13 @@ public class Stealth : MonoBehaviour
         float t = Time.time;
         foreach (var b in World.Beacons)
         {
-            b.Yaw = b.YawCenter + Mathf.Sin(t * b.Speed * Mathf.Deg2Rad * 2.2f + b.Phase) * b.Sweep;
-            if (b.Cone != null) b.Cone.rotation = Quaternion.Euler(4f, b.Yaw, 0);
+            b.Yaw = b.Spin ? Mathf.Repeat(b.Phase + t * b.Speed, 360f) : b.YawCenter + Mathf.Sin(t * b.Speed * Mathf.Deg2Rad * 2.2f + b.Phase) * b.Sweep;
+            if (b.Cone != null)
+            {
+                b.Cone.rotation = Quaternion.Euler(b.Pitch, b.Yaw, 0);
+                bool show = SkyController.I == null || SkyController.I.IsNight;
+                if (b.Cone.gameObject.activeSelf != show) b.Cone.gameObject.SetActive(show);
+            }
         }
         foreach (var p in World.Patrols)
         {

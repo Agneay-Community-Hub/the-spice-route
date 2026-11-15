@@ -67,6 +67,22 @@ public class Market
         foreach (var i in Items) i.SellPrice = Mathf.Round(i.BuyPrice * 0.8f);
     }
 
+    public void UseAlexGoods()
+    {
+        Items.Clear();
+        Items.Add(new Commodity { Name = "Black Pepper", Local = "kurumulaku", Desc = "Carried all the way from Malabar. Alexandria pays in silver.", Col = new Color(0.2f, 0.17f, 0.14f), WestPrice = 36, Held = 8 });
+        Items.Add(new Commodity { Name = "Myrrh", Local = "murr", Desc = "From the hills of Arabia, bound for the temples of the Nile.", Col = new Color(0.55f, 0.25f, 0.12f), WestPrice = 44, Held = 6 });
+        Items.Add(new Commodity { Name = "Frankincense", Local = "luban", Desc = "Pale resin that perfumes every shrine in the city.", Col = new Color(0.86f, 0.78f, 0.55f), WestPrice = 38, Held = 4 });
+    }
+
+    public void SetAlexandria()
+    {
+        PortName = "THE GREAT MARKETPLACE";
+        PortNote = "You need 400 gold for information. BEST: press SELL ALL on every good, then DONE.";
+        CanBuy = false; CanSell = true;
+        Items[0].SellPrice = 36; Items[1].SellPrice = 44; Items[2].SellPrice = 38;
+    }
+
     public void SetAden()
     {
         PortName = "ADEN";

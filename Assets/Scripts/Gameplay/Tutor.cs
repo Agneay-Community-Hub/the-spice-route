@@ -281,6 +281,8 @@ public class Tutor : MonoBehaviour
         return Mathf.DeltaAngle(p.Heading, b);
     }
 
+    static float Dist2(Vector3 a, Vector3 b) => Vector2.Distance(new Vector2(a.x, a.z), new Vector2(b.x, b.z));
+
     /// <summary>The single best thing to do right now, in plain words.</summary>
     string Coach()
     {
@@ -291,7 +293,8 @@ public class Tutor : MonoBehaviour
         if (p.HP < p.MaxHP * 0.35f) return "> Ship badly damaged! Sail away from danger; it repairs itself in 8 s";
 
         bool ch2 = G.Chapter == 2;
-        if (ch2 && Stealth.I != null && Stealth.I.Active && !Stealth.I.Spotted)
+        bool ch3 = G.Chapter == 3;
+        if (G.Chapter >= 2 && Stealth.I != null && Stealth.I.Active && !Stealth.I.Spotted)
         {
             if (p.LanternOn) return "> Press L to douse your lantern";
             if (Stealth.I.InLight) return "> You are in the light! Steer out of it (A / D)";
@@ -313,6 +316,15 @@ public class Tutor : MonoBehaviour
             return G.ReloadReady ? "> Enemy is beside you: CLICK LEFT MOUSE to shoot!" : "> Reloading... keep the enemy beside you";
         }
 
+        if (ch3 && Story.I.Step == 2)
+        {
+            float bd = Story.NearestBar(p.transform.position, out Vector3 bar);
+            Vector3 toBar = bar - p.transform.position; toBar.y = 0;
+            bool ahead = Vector3.Dot(toBar, p.Fwd) > 0;
+            if (bd < 170f && ahead && !Story.TideHigh) return p.Speed > 1.5f ? "> Sandbar ahead and the tide is LOW: press S to stop and wait" : "> Waiting for HIGH tide... watch the gauge at the top";
+            if (bd < 170f && ahead && Story.TideHigh) return "> The tide is HIGH: press W and sail over the sandbar now!";
+        }
+        if (ch3 && Story.I.Step == 1 && !EraShift.I.Active && Dist2(p.transform.position, World.P("canal_mouth")) < 450f) return "> Press SHIFT to see the obelisks of the old canal";
         if (ch2 && Story.I.Step == 2 && SkyController.I.FogMul > 2f)
             return EraShift.I.Active ? "> Sail between the glowing beacon pairs" : "> Press SHIFT to see the ancient beacons";
         if (ch2 && Story.I.Step == 5)
@@ -333,7 +345,7 @@ public class Tutor : MonoBehaviour
         if (!HUD.I.MarkerTarget.HasValue) return "";
         float dist = Vector3.Distance(HUD.I.MarkerTarget.Value, p.transform.position);
         if (p.SailLevel == 0 && dist > 60f) return "> Press W to open the sail and start moving";
-        bool docking = ch2 ? (Story.I.Step == 1 || Story.I.Step == 3) : (Story.I.Step == 1 || Story.I.Step == 8);
+        bool docking = ch3 ? Story.I.Step == 3 : ch2 ? (Story.I.Step == 1 || Story.I.Step == 3) : (Story.I.Step == 1 || Story.I.Step == 8);
         if (dist < 90f && p.Speed > 4f && docking) return "> Almost there: press S to slow down";
         if (G.AutoSteer) return p.SailLevel < 3 && dist > 150f ? "> Auto-steer is driving. Press W for more speed" : "> Auto-steer is driving. Relax, or press T to steer";
         float err = BearingError();
