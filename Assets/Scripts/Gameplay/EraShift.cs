@@ -67,7 +67,7 @@ public class EraShift : MonoBehaviour
         if (Game.I != null && Game.I.CanControl && (In.Down(Key.LeftShift) || In.Down(Key.RightShift))) Toggle();
         if (Active)
         {
-            Energy -= DrainRate * dt;
+            Energy -= DrainRate * Progress.S.EraDrainMul * dt;
             if (Energy <= 0f) { Energy = 0f; Deactivate(); HUD.I.Toast("The echo fades...", UIKit.Teal); }
         }
         else Energy = Mathf.Min(1f, Energy + RechargeRate * dt);

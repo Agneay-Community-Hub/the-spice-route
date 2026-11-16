@@ -289,6 +289,14 @@ public class Tutor : MonoBehaviour
         var p = G.Player;
         if (G.State != Game.GameState.Sailing) return "";
         if (Cursor.lockState != CursorLockMode.Locked) return "> Click once on the game picture to start steering";
+        if (Shore.I != null && Shore.I.OnFoot)
+        {
+            if (Shore.I.Near != null) return Shore.I.Near.Type == Site.Kind.Vault && !EraShift.I.Active ? "> Press SHIFT to see the hidden door" : "> Press E";
+            var goal = Shore.I.NearestGoal(out float gd);
+            if (goal != null && gd < 400f) return "> Walk to the " + (goal.Repeat ? "GOLD" : "TEAL") + " beam: " + goal.Label + " (" + Mathf.RoundToInt(gd) + " m)";
+            return "> Nothing more to find here. Press F to return to the ship";
+        }
+        if (Progress.D.Points >= 3 && !G.CombatEnabled && !G.ShoreWarning && !G.Tutorial && !G.BotControl) return "> You have " + Progress.D.Points + " skill points: press TAB to spend them";
         if (G.ShoreWarning) return "> LAND AHEAD! Hold A or D to turn away, or press S to slow down";
         if (p.HP < p.MaxHP * 0.35f) return "> Ship badly damaged! Sail away from danger; it repairs itself in 8 s";
 

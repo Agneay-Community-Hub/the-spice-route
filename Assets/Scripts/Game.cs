@@ -53,7 +53,7 @@ public class Game : MonoBehaviour
     public AudioMan.Track BaseTrack = AudioMan.Track.Calm;
 
     float reload;
-    const float ReloadTime = 2.3f;
+    float ReloadTime => 2.3f * Progress.S.ReloadMul;
     float ramCooldown;
     float damageFlash;
     bool skipFire;
@@ -132,18 +132,25 @@ public class Game : MonoBehaviour
         AudioMan.Create(transform);
         EraShift.Create(transform);
         Story = gameObject.AddComponent<Story>();
+        {
+            var a0 = System.Environment.GetCommandLineArgs();
+            Progress.Persist = System.Array.IndexOf(a0, "-autoplay") < 0 && System.Array.IndexOf(a0, "-capture") < 0;
+            Progress.Load();
+            Progress.Apply();
+        }
         WaveField.Push(0, 0.55f);
         var bootArgs = System.Environment.GetCommandLineArgs();
         int ci = System.Array.IndexOf(bootArgs, "-chapter");
         if (ci >= 0 && ci + 1 < bootArgs.Length && (bootArgs[ci + 1] == "2" || bootArgs[ci + 1] == "3" || bootArgs[ci + 1] == "4")) PendingChapter = int.Parse(bootArgs[ci + 1]);
         Chapter = PendingChapter >= 2 && PendingChapter <= 4 ? PendingChapter : 1;
         yield return World.Build(transform, (p, s) => HUD.I.SetLoading(0.05f + p * 0.7f, s), Chapter);
+        World.BuildSites(Chapter);
 
         Player = Ship.Create(ShipBuilder.Style.Kaveri, transform, "Kaveri", true);
         Player.OceanSlot = 0;
         Player.Teleport(World.P("start"), Chapter == 3 ? 90f : Chapter == 2 ? 180f : 270f);
         Player.OnDamaged += a => { damageFlash = Mathf.Min(1f, damageFlash + a / 18f); CameraRig.I.Shake(Mathf.Clamp01(a / 25f)); };
-        Player.OnDeath += () => StartCoroutine(PlayerLost());
+        Player.OnDeath += () => { Progress.OnDefeat(); StartCoroutine(PlayerLost()); };
         Combat.I.Ships.Add(Player);
 
         Raider = Ship.Create(ShipBuilder.Style.Raider, transform, "Raider", false);
@@ -241,6 +248,14 @@ public class Game : MonoBehaviour
         }
         Raider.Team = 1;
         if (Flagship != null) Flagship.Team = 1;
+        Raider.OnDeath += Progress.OnVictory;
+        if (Flagship != null) Flagship.OnDeath += Progress.OnVictory;
+        if (Market.Gold < Progress.D.Gold) Market.Gold = Progress.D.Gold;
+        Progress.EnsureBaseline(Chapter);
+        Progress.Apply();
+        Player.HP = Player.MaxHP;
+        Ledger.Create();
+        Shore.Create(transform);
 
         rig.Target = Player;
         HUD.I.InitChart();
@@ -274,7 +289,7 @@ public class Game : MonoBehaviour
         if (State != GameState.Title) return;
         Tutorial = true;
         Player.DamageTaken = 0.45f;
-        Player.MaxSpeed = 15.5f * 1.3f;
+        Progress.Apply();
         EraShift.I.DrainRate = 1f / 16f;
         Market.Gold = 260;
         HUD.I.KnownPlaces.Add("echo");
@@ -417,6 +432,7 @@ public class Game : MonoBehaviour
         HUD.I.FadeTo(1f, 0.6f);
         yield return new WaitForSecondsRealtime(0.7f);
         EraShift.I.ForceOff();
+        if (Shore.I != null) Shore.I.Return(false);
         Player.ResetState(Player.MaxHP);
         Player.SailLevel = 0;
         ClearEnemies();
@@ -514,6 +530,7 @@ public class Game : MonoBehaviour
         if (HUD.I.TitleOpen) HUD.I.ShowTitle(false);
         HUD.I.ForceCloseCards();
         HUD.I.HideLoading();
+        if (Shore.I != null) Shore.I.Return(false);
         Player.ResetState(Player.MaxHP);
         ClearEnemies();
         if (Stealth.I != null) Stealth.I.ResetState();
@@ -564,7 +581,8 @@ public class Game : MonoBehaviour
         if (paused && (In.Down(Key.Escape) || In.Down(Key.P))) { SetPause(false); return; }
 
         if (Player == null) return;
-        if (CanControl && BotControl && Autoplay.I != null) { Autoplay.I.Drive(dt); BotCombatAndInteract(dt); }
+        if (Shore.I != null && Shore.I.OnFoot) { Shore.I.Tick(dt); ShoreWarning = false; HUD.I.ShowReticle = false; }
+        else if (CanControl && BotControl && Autoplay.I != null) { Autoplay.I.Drive(dt); BotCombatAndInteract(dt); }
         else if (CanControl) PlayerInput(dt);
         else
         {
@@ -679,7 +697,7 @@ public class Game : MonoBehaviour
     {
         if (!CombatEnabled || reload > 0 || Player.Dead) return false;
         if (!Combat.Broadside(Player, aim, 62f)) return false;
-        Combat.I.FireVolley(Player, aim, vel, 7, 5f, 5.5f);
+        Combat.I.FireVolley(Player, aim, vel, Progress.S.Volley, 5f, 5.5f * Progress.S.VolleyDmgMul);
         reload = ReloadTime;
         return true;
     }
@@ -713,7 +731,8 @@ public class Game : MonoBehaviour
             CameraRig.I.ToggleHelm();
             HUD.I.Toast(CameraRig.I.CurMode == CameraRig.Mode.Helm ? "PERSPECTIVE SHIFT  ·  helm view" : "PERSPECTIVE SHIFT  ·  chase view", UIKit.Parch);
         }
-        if (In.Down(Key.M) || In.Down(Key.Tab)) HUD.I.ToggleChart();
+        if (In.Down(Key.M)) HUD.I.ToggleChart();
+        if (In.Down(Key.Tab) && Ledger.I != null) { Player.RudderInput = 0; Ledger.I.Open(0); return; }
         if (In.Down(Key.P) || In.Down(Key.Escape)) SetPause(true);
         if (In.Down(Key.L))
         {
@@ -736,9 +755,9 @@ public class Game : MonoBehaviour
                     a();
                 }
             }
-            else HUD.I.Prompt(null);
+            else HUD.I.Prompt(Shore.I != null ? Shore.I.ShipPrompt : null);
         }
-        else HUD.I.Prompt(null);
+        else HUD.I.Prompt(Shore.I != null ? Shore.I.ShipPrompt : null);
 
         // combat
         if (CombatEnabled && !Player.Dead)
@@ -758,7 +777,7 @@ public class Game : MonoBehaviour
                     HUD.I.Hint("Your archers line the rails  ·  turn broadside to the target to loose a volley", 3f);
                 else
                 {
-                    Combat.I.FireVolley(Player, aim, targetVel, 7, aiming ? 3.5f : 5f, 5.5f);
+                    Combat.I.FireVolley(Player, aim, targetVel, Progress.S.Volley, aiming ? 3.5f : 5f, 5.5f * Progress.S.VolleyDmgMul);
                     reload = ReloadTime;
                     CameraRig.I.Shake(0.12f);
                 }
@@ -838,8 +857,8 @@ public class Game : MonoBehaviour
                 bool playerRams = Vector3.Angle(Player.Fwd, n) < 40f;
                 bool raiderRams = Vector3.Angle(Raider.Fwd, -n) < 40f;
                 Vector3 hit = Player.Planar + n * 5f + Vector3.up * 1.5f;
-                Raider.Damage(closing * (playerRams ? 6f : 2f), hit, false);
-                Player.Damage(closing * (raiderRams ? 3.5f : 1.2f), hit, false);
+                Raider.Damage(closing * (playerRams ? 6f * Progress.S.RamMul : 2f), hit, false);
+                Player.Damage(closing * (raiderRams ? 3.5f : 1.2f * Progress.S.RamSelfMul), hit, false);
                 FX.Impact(hit, 2f);
                 FX.Splash(hit, 3f);
                 AudioMan.I.PlayAt("crash", hit, 1f);

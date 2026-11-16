@@ -33,6 +33,7 @@ public partial class Story : MonoBehaviour
             Step = s;
             G.Checkpoint = s;
             yield return G.Chapter == 4 ? Beat4(s, restart && s == step) : G.Chapter == 3 ? Beat3(s, restart && s == step) : G.Chapter == 2 ? Beat2(s, restart && s == step) : Beat(s, restart && s == step);
+            Progress.OnBeatDone();
         }
         yield return G.Chapter == 4 ? Ending4() : G.Chapter == 3 ? Ending3() : G.Chapter == 2 ? Ending2() : Ending();
     }

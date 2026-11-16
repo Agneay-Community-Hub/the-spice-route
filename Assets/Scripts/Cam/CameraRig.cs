@@ -5,7 +5,19 @@ public class CameraRig : MonoBehaviour
     public static CameraRig I;
     public Camera Cam;
     public Ship Target;
-    public enum Mode { Orbit, Helm, Cinematic, CinOrbit }
+    public enum Mode { Orbit, Helm, Cinematic, CinOrbit, Foot }
+    public Transform FootTarget;
+    float footYaw, footPitch = 14f, footDist = 7f;
+    public float FootYaw => footYaw;
+
+    public void Foot(Transform target, float yawDeg)
+    {
+        fromPos = transform.position; fromRot = transform.rotation; fromFov = Cam.fieldOfView;
+        blend = 0f; blendSpeed = 1f / 1.2f;
+        FootTarget = target; footYaw = yawDeg; footPitch = 14f;
+        CurMode = Mode.Foot;
+        pos = Vector3.zero;
+    }
     public Mode CurMode = Mode.Cinematic;
     public bool Aiming;
     public bool InputEnabled = true;
@@ -136,6 +148,22 @@ public class CameraRig : MonoBehaviour
                     desiredFov = 62f;
                 }
                 break;
+            case Mode.Foot:
+                if (FootTarget == null) break;
+                {
+                    footYaw += md.x;
+                    footPitch = Mathf.Clamp(footPitch - md.y, -12f, 65f);
+                    if (InputEnabled) footDist = Mathf.Clamp(footDist - In.Scroll * 1.2f, 3.5f, 16f);
+                    Quaternion q = Quaternion.Euler(footPitch, footYaw, 0);
+                    Vector3 pivot = FootTarget.position + Vector3.up * 1.9f;
+                    Vector3 p = pivot + q * new Vector3(0, 0, -footDist);
+                    float lh = Mathf.Max(World.LandHeight(p.x, p.z), WaveField.HeightAt(p)) + 0.6f;
+                    if (p.y < lh) p.y = lh;
+                    desiredPos = p;
+                    desiredRot = Quaternion.LookRotation(pivot - p);
+                    desiredFov = 58f;
+                }
+                break;
             case Mode.Cinematic:
                 cinPos += cinVel * dt;
                 cinLook += cinVel * dt;
@@ -151,7 +179,7 @@ public class CameraRig : MonoBehaviour
                 break;
         }
 
-        if (CurMode == Mode.Orbit)
+        if (CurMode == Mode.Orbit || CurMode == Mode.Foot)
         {
             pos = Vector3.Lerp(pos == Vector3.zero ? desiredPos : pos, desiredPos, 1f - Mathf.Exp(-10f * dt));
             rot = desiredRot;

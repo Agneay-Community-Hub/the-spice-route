@@ -12,6 +12,7 @@ public class Autoplay : MonoBehaviour
 {
     public static Autoplay I;
     bool tutorial, ended, marketBusy;
+    bool landTest, landDone, landBusy;
     string shotDir, logPath;
     int lastStep = -2;
     float stepTime, shotTimer, realStart;
@@ -30,6 +31,7 @@ public class Autoplay : MonoBehaviour
         I = this;
         var args = System.Environment.GetCommandLineArgs();
         tutorial = System.Array.IndexOf(args, "-tutorial") >= 0;
+        landTest = System.Array.IndexOf(args, "-landtest") >= 0;
         int si = System.Array.IndexOf(args, "-shots");
         shotDir = si >= 0 && si + 1 < args.Length ? args[si + 1] : Path.Combine(Application.persistentDataPath, "autoplay");
         Directory.CreateDirectory(shotDir);
@@ -76,6 +78,7 @@ public class Autoplay : MonoBehaviour
             return;
         }
         if (HUD.I.MarketOpen && !marketBusy) StartCoroutine(Trade());
+        if (landTest && !landDone && !landBusy && G.State == Game.GameState.Sailing && Story.I.Step == 1 && !HUD.I.ModalOpen) StartCoroutine(LandTest());
         if (HUD.I.ChoiceOpen && !marketBusy) StartCoroutine(Choose());
 
         int s = Story.I.Step;
@@ -83,6 +86,7 @@ public class Autoplay : MonoBehaviour
         {
             Log("Step " + s + " begins   hull " + Mathf.RoundToInt(G.Player.HP) + "   gold " + G.Market.Gold + "   cargo " + G.Market.Cargo);
             lastStep = s;
+            foreach (int sk in new[] { 8, 9, 10, 0, 11, 1, 2, 3, 4, 5, 6, 7 }) if (Progress.Learn(sk)) Log("Learned skill: " + Progress.SkillNames[sk]);
             stepTime = 0;
         }
         stepTime += Time.deltaTime;
@@ -155,6 +159,114 @@ public class Autoplay : MonoBehaviour
         marketBusy = false;
     }
 
+    IEnumerator WalkTo(Site site, string what)
+    {
+        float t = 0;
+        var sh = Shore.I;
+        while (sh.OnFoot && t < 90f)
+        {
+            Vector3 d = site.Pos - sh.Pos; d.y = 0;
+            if (d.magnitude < site.Radius * 0.6f) break;
+            sh.BotMove = new Vector2(d.x, d.z).normalized;
+            t += Time.deltaTime;
+            yield return null;
+        }
+        sh.BotMove = Vector2.zero;
+        Vector3 e = site.Pos - sh.Pos; e.y = 0;
+        if (e.magnitude > site.Radius) { issues.Add("LAND: could not walk to " + what + " (" + e.magnitude.ToString("0") + " m short)"); Log("LAND could not reach " + what); }
+        else Log("LAND reached " + what);
+        yield return new WaitForSecondsRealtime(0.5f);
+    }
+
+    Site FindSite(Site.Kind k)
+    {
+        Site best = null; float bd = 1e9f;
+        foreach (var s in World.Sites)
+        {
+            if (s.Type != k) continue;
+            float d = Vector3.Distance(s.Pos, Shore.I.Pos);
+            if (d < bd) { bd = d; best = s; }
+        }
+        return best;
+    }
+
+    IEnumerator LandTest()
+    {
+        landBusy = true;
+        var sh = Shore.I;
+        G.Market.Gold += 200;
+        Log("LAND TEST begins: " + World.Sites.Count + " sites in this chapter");
+        yield return new WaitForSeconds(1.5f);
+        if (!sh.GoAshore()) { issues.Add("LAND: could not go ashore at Muziris"); Log("LAND could not go ashore"); landDone = true; landBusy = false; yield break; }
+        sh.BotMode = true;
+        yield return new WaitForSecondsRealtime(2f);
+        Shot("land_ashore");
+        int gold0 = G.Market.Gold;
+        var wright = FindSite(Site.Kind.Shipwright);
+        if (wright == null) issues.Add("LAND: no shipwright site");
+        else
+        {
+            yield return WalkTo(wright, "shipwright");
+            Shot("land_shipwright");
+            sh.Use(wright);
+            yield return new WaitForSecondsRealtime(1f);
+            if (!Ledger.IsOpen) issues.Add("LAND: shipwright did not open the ledger");
+            Shot("ledger_ship");
+            bool ok = Progress.BuyUpgrade(0);
+            Ledger.I.Refresh();
+            Log("LAND bought hull upgrade: " + ok + "  hull now " + G.Player.MaxHP + "  gold " + G.Market.Gold);
+            if (!ok || G.Player.MaxHP < 119f) issues.Add("LAND: hull upgrade did not apply");
+            yield return new WaitForSecondsRealtime(0.8f);
+            Shot("ledger_ship_bought");
+            Ledger.I.Close();
+        }
+        var tav = FindSite(Site.Kind.Tavern);
+        if (tav == null) issues.Add("LAND: no tavern site");
+        else
+        {
+            yield return WalkTo(tav, "tavern");
+            Shot("land_tavern");
+            sh.Use(tav);
+            yield return new WaitForSecondsRealtime(1f);
+            Shot("ledger_crew");
+            var cand = Progress.Candidates(tav.Port);
+            bool hired = cand.Count > 0 && Progress.Hire(cand[0]);
+            Ledger.I.Refresh();
+            Log("LAND hired " + (cand.Count > 0 ? cand[0].Name : "nobody") + ": " + hired + "  crew " + Progress.D.Crew.Count);
+            if (!hired) issues.Add("LAND: could not hire crew");
+            yield return new WaitForSecondsRealtime(0.8f);
+            Shot("ledger_crew_hired");
+            Ledger.I.Close();
+        }
+        var ins = FindSite(Site.Kind.Inscription);
+        if (ins != null)
+        {
+            int pts = Progress.D.Points;
+            yield return WalkTo(ins, "inscription");
+            sh.Use(ins);
+            yield return new WaitForSecondsRealtime(1f);
+            Shot("land_inscription");
+            if (Progress.D.Points <= pts) issues.Add("LAND: inscription gave no skill point");
+            Ledger.I.Open(0);
+            yield return new WaitForSecondsRealtime(0.6f);
+            bool learned = Progress.Learn(0) || Progress.Learn(8) || Progress.Has(0);
+            Ledger.I.Refresh();
+            Log("LAND learned Trim Mastery: " + learned + "  speed x" + Progress.S.SpeedMul.ToString("0.00"));
+            if (!learned) issues.Add("LAND: could not learn a skill");
+            yield return new WaitForSecondsRealtime(0.8f);
+            Shot("ledger_skills");
+            Ledger.I.Close();
+        }
+        yield return new WaitForSecondsRealtime(0.5f);
+        sh.BotMode = false;
+        sh.Return();
+        yield return new WaitForSeconds(2f);
+        if (sh.OnFoot || G.Player.Frozen) issues.Add("LAND: did not return to the ship cleanly");
+        Log("LAND TEST done  gold " + gold0 + " -> " + G.Market.Gold);
+        landDone = true;
+        landBusy = false;
+    }
+
     IEnumerator Finish()
     {
         Log("WIN — reached the ending.");
@@ -173,6 +285,7 @@ public class Autoplay : MonoBehaviour
     public void Drive(float dt)
     {
         var p = G.Player;
+        if (landBusy) { p.SailLevel = 0; p.RudderInput = 0; return; }
         int s = Story.I.Step;
         int sail = 3;
         float rud = 0;

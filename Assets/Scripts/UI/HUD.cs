@@ -27,6 +27,9 @@ public class HUD : MonoBehaviour
     Text goldText, cargoText;
     RectTransform objPanel; Text objTitle, objText, objDist;
     public Text NextText;
+    public Text KeysText;
+    public const string ShipKeys = "<color=#e8c57a>W/S</color> sail   <color=#e8c57a>A/D</color> steer   <color=#e8c57a>T</color> auto-steer   <color=#e8c57a>M</color> chart   <color=#e8c57a>TAB</color> ledger   <color=#e8c57a>F</color> ashore";
+    public const string FootKeys = "<color=#e8c57a>WASD</color> walk   <color=#e8c57a>SPACE</color> jump   <color=#e8c57a>E</color> use   <color=#e8c57a>SHIFT</color> era   <color=#e8c57a>TAB</color> ledger   <color=#e8c57a>F</color> back to ship";
     RectTransform marker; Text markerText; Image markerIcon;
     RectTransform enemyBar; Image enemyFill; Text enemyName;
     RectTransform reticle; Image reticleFill, reticleRing;
@@ -55,7 +58,7 @@ public class HUD : MonoBehaviour
     CanvasGroup ending; RectTransform endRoute; Text endText, endStats;
 
     public bool MarketOpen, ChartOpen, PauseOpen, CardsOpen, GameOverOpen, EndingOpen, TitleOpen, ControlsOpen, ChoiceOpen;
-    public bool ModalOpen => MarketOpen || ChartOpen || PauseOpen || CardsOpen || GameOverOpen || EndingOpen || TitleOpen || ControlsOpen || ChoiceOpen;
+    public bool ModalOpen => MarketOpen || ChartOpen || PauseOpen || CardsOpen || GameOverOpen || EndingOpen || TitleOpen || ControlsOpen || ChoiceOpen || Ledger.IsOpen;
 
     // dialogue state
     readonly Queue<(string sp, string tx, float dur)> lines = new Queue<(string, string, float)>();
@@ -231,8 +234,8 @@ public class HUD : MonoBehaviour
         hullFill.fillMethod = Image.FillMethod.Horizontal;
         hullText = UIKit.Txt(p, "HullTxt", "", 15, UIKit.Parch, TextAnchor.MiddleLeft);
         UIKit.Place(hullText.rectTransform, 0f, 0f, 0f, 0.5f, 540, 66, 80, 22);
-        var keys = UIKit.Txt(p, "Keys", "<color=#e8c57a>W/S</color> sail   <color=#e8c57a>A/D</color> steer   <color=#e8c57a>T</color> auto-steer   <color=#e8c57a>M</color> chart", 15, UIKit.Muted, TextAnchor.MiddleLeft);
-        UIKit.Place(keys.rectTransform, 0f, 0f, 0f, 0.5f, 232, 30, 460, 24);
+        var keys = KeysText = UIKit.Txt(p, "Keys", "<color=#e8c57a>W/S</color> sail   <color=#e8c57a>A/D</color> steer   <color=#e8c57a>T</color> auto-steer   <color=#e8c57a>M</color> chart   <color=#e8c57a>TAB</color> ledger   <color=#e8c57a>F</color> ashore", 15, UIKit.Muted, TextAnchor.MiddleLeft);
+        UIKit.Place(keys.rectTransform, 0f, 0f, 0f, 0.5f, 232, 30, 760, 24);
     }
 
     void BuildEra()
@@ -526,7 +529,7 @@ public class HUD : MonoBehaviour
     {
         controls = MakeScreen("Controls", new Color(0, 0, 0, 0.7f));
         var p = UIKit.Panel(controls.transform, "Panel", new Color(0.04f, 0.05f, 0.07f, 0.95f), new Color(UIKit.Gold.r, UIKit.Gold.g, UIKit.Gold.b, 0.5f));
-        UIKit.Place(p, 0.5f, 0.5f, 0.5f, 0.5f, 0, 0, 900, 780);
+        UIKit.Place(p, 0.5f, 0.5f, 0.5f, 0.5f, 0, 0, 900, 900);
         var h = UIKit.Txt(p, "H", UIKit.Spaced("CONTROLS"), 34, UIKit.Gold, TextAnchor.MiddleCenter, FontStyle.Bold);
         UIKit.Place(h.rectTransform, 0.5f, 1f, 0.5f, 1f, 0, -30, 800, 50);
         string[,] rows = {
@@ -541,6 +544,9 @@ public class HUD : MonoBehaviour
             {"Left Click", "Loose a volley of fire-arrows (broadside)"},
             {"Right Click", "Aim the volley"},
             {"M", "Your father's chart"},
+            {"TAB", "Captain's Ledger: skills, crew, ship"},
+            {"F", "Go ashore / return to the ship"},
+            {"SPACE", "Jump (on foot)"},
             {"Enter", "Skip dialogue"},
             {"P", "Pause"},
         };

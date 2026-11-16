@@ -53,6 +53,31 @@ flagship **The Last Map** and make the final choice. There are four endings: **M
 New in Chapter IV: allied ships with their own AI, a localized storm region, a map that grows
 south past the old edge, a boss fleet battle, and a branching ending.
 
+## Land, crew and the Captain's Ledger
+
+**Go ashore.** Stop the ship near any beach or port and press **F** to land as Arivan. Walk with
+**W A S D**, jump with **SPACE**, use things with **E**, and press **F** again to return to the ship.
+Light beams mark what is worth walking to: **gold** beams are shops, **teal** beams are discoveries.
+
+- **Shipwrights** sell five upgrades (hull, sails, steering oar, hold, fire-arrows; three levels each,
+  all visible on the ship) and four new **ship classes**: Swift Merchant, Great Cargo Ship, War Galley
+  and Explorer.
+- **Taverns** are where you hire crew, pay wages and throw feasts.
+- **Inscriptions** give skill points, **chests** and wild spices give gold, and **vaults** are sealed
+  walls whose door exists only in the past: open them with the Era Shift.
+
+**The Captain's Ledger (TAB)** has three pages:
+
+- **Skills.** Three trees (Navigator, Merchant, Warrior) with four skills each. Skill points come
+  from story steps, sunk enemies, inscriptions and vaults.
+- **Crew.** Up to six sailors, each with a name, origin, personality, wage and skills. Assign them to
+  six stations (helm, sails, lookout, archers, carpenter, quartermaster). **Loyalty** rises with paid
+  wages, feasts and victories, and falls with unpaid voyages and defeats. Loyal sailors work harder;
+  a sailor with no loyalty leaves the ship.
+- **Ship.** Upgrades, ship class and current stats.
+
+Progress carries across all four chapters and is saved in the browser.
+
 ## Screenshots
 
 | | |
@@ -139,7 +164,7 @@ upload it as an HTML game, and set the viewport to 1280 × 720 with fullscreen e
 The Windows player has two command-line modes, used to test the game and to make its marketing media:
 
 ```bash
-SpiceRoute.exe -autoplay [-tutorial] [-chapter 2|3|4] [-choice 0-3] -shots <folder>
+SpiceRoute.exe -autoplay [-tutorial] [-chapter 2|3|4] [-choice 0-3] [-landtest] -shots <folder>
 ```
 
 A bot plays the whole chapter from the title screen to the ending. It logs every story step, flags any step where it gets stuck, dies or loses the HUD, and saves screenshots. See `Assets/Scripts/Gameplay/Autoplay.cs`.
@@ -155,7 +180,7 @@ Renders scripted cinematic shots at a locked 30 fps (1920×1080 frames plus 4K s
 | Folder | Contents |
 | --- | --- |
 | `Assets/Scripts/Game.cs` | Bootstrap, game states, player input, combat input, checkpoints |
-| `Assets/Scripts/Gameplay` | Story beats, Era Shift, market and economy |
+| `Assets/Scripts/Gameplay` | Story beats, Era Shift, market and economy, progression (`Progress.cs`), land exploration (`Shore.cs`) |
 | `Assets/Scripts/Ship` | Procedural ship builder, ship simulation, combat, raider AI, allied fleet AI |
 | `Assets/Scripts/World` | Wave field, ocean, sky and weather, wind, terrain, props, world layout |
 | `Assets/Scripts/Audio` | Offline synthesiser and audio manager |

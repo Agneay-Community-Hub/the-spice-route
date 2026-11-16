@@ -91,8 +91,8 @@ public class Market
         Items[0].SellPrice = 31; Items[1].SellPrice = 38; Items[2].SellPrice = 13;
     }
 
-    public int BuyCost(int idx) => Mathf.RoundToInt(Items[idx].BuyPrice);
-    public int SellValue(int idx) => Mathf.RoundToInt(Items[idx].SellPrice);
+    public int BuyCost(int idx) => Mathf.Max(1, Mathf.RoundToInt(Items[idx].BuyPrice * Progress.S.BuyMul));
+    public int SellValue(int idx) => Mathf.RoundToInt(Items[idx].SellPrice * Progress.S.SellMul);
 
     public bool Buy(int idx)
     {

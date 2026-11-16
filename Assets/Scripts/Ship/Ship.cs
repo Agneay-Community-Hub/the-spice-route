@@ -23,6 +23,7 @@ public class Ship : MonoBehaviour
     public bool LanternOn = true;
     public int Team;
     public bool IgnoreReefs;
+    public float DriftMul = 1f;
     Light lanternPoint;
 
     public void SetLantern(bool on)
@@ -166,7 +167,7 @@ public class Ship : MonoBehaviour
         AngVel = Mathf.Lerp(AngVel, Rudder * turnMax, 1f - Mathf.Exp(-2.2f * dt));
         Heading = Mathf.Repeat(Heading + AngVel * dt, 360f);
 
-        Vector3 drift = Wind.Dir3 * Mathf.Max(0f, Wind.Effective - 1.05f) * 1.6f;
+        Vector3 drift = Wind.Dir3 * Mathf.Max(0f, Wind.Effective - 1.05f) * 1.6f * DriftMul;
         planar += (Fwd * Speed + drift) * dt;
 
         collideCooldown -= dt;
@@ -277,7 +278,7 @@ public class Ship : MonoBehaviour
         }
         if (!Dead && HP <= 0f) { HP = 0; Die(); }
         if (IsPlayer && !Dead && Time.time - LastDamageTime > 8f && HP < MaxHP && fires.Count == 0)
-            HP = Mathf.Min(MaxHP, HP + 1.6f * dt);
+            HP = Mathf.Min(MaxHP, HP + 1.6f * Progress.S.RepairMul * dt);
     }
 
     void Die()

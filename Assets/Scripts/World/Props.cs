@@ -103,6 +103,7 @@ public static class Props
     // ------------------------------------------------------------------ Kerala architecture
     public static void KeralaHouse(MeshBuilder b, Vector3 pos, float yaw, float w, float d, float wallH, System.Random r, bool wooden)
     {
+        World.Obstacles.Add(new Vector3(pos.x, pos.z, Mathf.Max(w, d) * 0.5f));
         Push(b, pos, yaw);
         Color lat = Vary(Laterite, r, 0.08f);
         Color wall = wooden ? Vary(WoodC, r, 0.1f) : Vary(Whitewash, r, 0.04f);
@@ -146,6 +147,7 @@ public static class Props
 
     public static void Godown(MeshBuilder b, Vector3 pos, float yaw, float w, float d, System.Random r)
     {
+        World.Obstacles.Add(new Vector3(pos.x, pos.z, Mathf.Max(w, d) * 0.5f));
         Push(b, pos, yaw);
         b.Box(new Vector3(0, 0.4f, 0), new Vector3(w + 0.6f, 0.8f, d + 0.6f), Vary(Laterite, r, 0.08f));
         b.Box(new Vector3(0, 2.4f, 0), new Vector3(w, 3.2f, d), Vary(WoodC, r, 0.1f));
@@ -163,6 +165,7 @@ public static class Props
 
     public static void Temple(MeshBuilder b, MeshBuilder glow, Vector3 pos, float yaw)
     {
+        World.Obstacles.Add(new Vector3(pos.x, pos.z, 6f));
         Push(b, pos, yaw);
         b.Cylinder(new Vector3(0, -1f, 0), new Vector3(0, 1.0f, 0), 6.2f, 6.0f, 20, Laterite, false, true);
         b.Cylinder(new Vector3(0, 1.0f, 0), new Vector3(0, 4.6f, 0), 4.6f, 4.6f, 20, Whitewash);
@@ -221,6 +224,7 @@ public static class Props
 
     public static void Stall(MeshBuilder b, Vector3 pos, float yaw, Color awning, System.Random r)
     {
+        World.Obstacles.Add(new Vector3(pos.x, pos.z, 1.6f));
         Push(b, pos, yaw);
         float w = 3.2f, d = 2.4f;
         for (int i = 0; i < 4; i++)
@@ -334,6 +338,7 @@ public static class Props
 
     public static void Lighthouse(MeshBuilder b, MeshBuilder glow, Vector3 pos, float h, Color stone, bool ruined, System.Random r)
     {
+        World.Obstacles.Add(new Vector3(pos.x, pos.z, 3.5f));
         b.Cylinder(pos + Vector3.down * 2f, pos + Vector3.up * 1.2f, 7.5f, 7f, 14, stone * 0.85f, false, true);
         float top = ruined ? h * 0.32f : h;
         int bands = 5;
@@ -369,6 +374,7 @@ public static class Props
 
     public static void MudHouse(MeshBuilder b, Vector3 pos, float yaw, float w, float d, float h, bool ruined, System.Random r)
     {
+        World.Obstacles.Add(new Vector3(pos.x, pos.z, Mathf.Max(w, d) * 0.5f));
         Push(b, pos, yaw);
         Color c = Vary(Mudbrick, r, 0.08f);
         b.Box(new Vector3(0, -0.5f, 0), new Vector3(w + 0.6f, 1f, d + 0.6f), c * 0.85f);
@@ -398,6 +404,7 @@ public static class Props
 
     public static void Watchtower(MeshBuilder b, Vector3 pos, float h, System.Random r)
     {
+        World.Obstacles.Add(new Vector3(pos.x, pos.z, 2f));
         Color c = Vary(Mudbrick, r, 0.05f);
         b.Cylinder(pos + Vector3.down * 1f, pos + Vector3.up * h, 3.4f, 2.6f, 10, c, false, true);
         for (int i = 0; i < 10; i++)

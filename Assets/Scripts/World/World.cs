@@ -89,6 +89,7 @@ public static partial class World
         Islands.Clear(); Rocks.Clear(); Points.Clear(); EchoStones.Clear(); Channel.Clear(); RouteMarkers.Clear(); EchoMotes.Clear();
         Beacons.Clear(); Patrols.Clear(); FogChannel.Clear();
         Tide = 0f; SandBars.Clear(); Canal.Clear();
+        Obstacles.Clear(); Sites.Clear();
         if (chapter == 2) { yield return BuildChapter2(progress); yield break; }
         if (chapter == 3) { yield return BuildChapter3(progress); yield break; }
         ChartRect = chapter == 4 ? new Rect(-2900, -2650, 3700, 3950) : new Rect(-2900, -1350, 3700, 2600);
