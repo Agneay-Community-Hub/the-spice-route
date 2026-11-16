@@ -28,7 +28,7 @@ public static partial class World
         for (int i = 0; i < 4000 && placed < 230; i++)
         {
             float x = -1180f + (float)r.NextDouble() * 760f;
-            float z = -1950f + (float)r.NextDouble() * 1080f;
+            float z = -1760f + (float)r.NextDouble() * 890f;
             if (DistToPolyline(Passage, x, z) < 36f) continue;
             if (LandHeight(x, z) > -3f) continue;
             float rad = 3f + (float)r.NextDouble() * 7f;

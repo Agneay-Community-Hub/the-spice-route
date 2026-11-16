@@ -85,8 +85,11 @@ Progress carries across all four chapters and is saved in the browser.
 | ![Muziris at dawn](docs/01_01_muziris_dawn.jpg) | ![Era Shift](docs/05_08_era_shift.jpg) |
 | ![The storm](docs/03_05_storm.jpg) | ![Battle](docs/04_06_battle.jpg) |
 | ![Market](docs/10_gameplay_market_open.jpg) | ![Ending](docs/15_gameplay_ending_screen.jpg) |
+| ![The Gate of Tears at night](docs/21_ch2_gate_of_tears.jpg) | ![The canal and the tide](docs/23_ch3_canal_tide.jpg) |
+| ![The Guild fleet](docs/26_ch4_guild_fleet.jpg) | ![The final battle](docs/29_ch4_last_map.jpg) |
+| ![Ashore in Muziris](docs/16_ashore_muziris.jpg) | ![Skill trees](docs/17_ledger_skills.jpg) |
 
-## The seven shifts in this chapter
+## The seven shifts
 
 | Shift | How it plays |
 | --- | --- |

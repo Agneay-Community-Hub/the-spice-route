@@ -288,7 +288,7 @@ public class Tutor : MonoBehaviour
     {
         var p = G.Player;
         if (G.State != Game.GameState.Sailing) return "";
-        if (Cursor.lockState != CursorLockMode.Locked) return "> Click once on the game picture to start steering";
+        if (Cursor.lockState != CursorLockMode.Locked && !G.BotControl) return "> Click once on the game picture to start steering";
         if (Shore.I != null && Shore.I.OnFoot)
         {
             if (Shore.I.Near != null) return Shore.I.Near.Type == Site.Kind.Vault && !EraShift.I.Active ? "> Press SHIFT to see the hidden door" : "> Press E";

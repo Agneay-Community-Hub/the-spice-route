@@ -57,6 +57,9 @@ public class CameraRig : MonoBehaviour
         return I;
     }
 
+    /// <summary>Swings the chase camera to a given angle (used for media capture).</summary>
+    public void LookFrom(float yawDeg, float pitchDeg, float distance) { yaw = yawDeg; pitch = pitchDeg; targetDist = dist = distance; idle = -6f; }
+
     public void Shake(float amt) => trauma = Mathf.Clamp01(trauma + amt);
 
     void BeginBlend(float seconds)

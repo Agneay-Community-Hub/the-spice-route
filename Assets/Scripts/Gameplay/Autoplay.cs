@@ -13,6 +13,71 @@ public class Autoplay : MonoBehaviour
     public static Autoplay I;
     bool tutorial, ended, marketBusy;
     bool landTest, landDone, landBusy;
+    bool gifs; int burstLeft, burstWait; string burstName;
+    readonly HashSet<string> burstDone = new HashSet<string>();
+
+    void Burst(string name, float camYaw = 9999f, float camPitch = 12f, float camDist = 34f)
+    {
+        if (!gifs || burstLeft > 0 || burstWait > 0 || burstDone.Contains(name)) return;
+        burstDone.Add(name);
+        burstName = name;
+        if (camYaw < 9000f) CameraRig.I.LookFrom(G.Player.Heading + camYaw, camPitch, camDist);
+        Directory.CreateDirectory(Path.Combine(shotDir, "gif_" + name));
+        burstWait = 12;
+        Log("GIF burst: " + name);
+    }
+
+    bool BurstTick()
+    {
+        if (burstWait > 0)
+        {
+            burstWait--;
+            Time.timeScale = 1f;
+            if (burstWait == 3) ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "still_" + burstName + ".png"), 2);
+            if (burstWait == 0) burstLeft = 66;
+            return true;
+        }
+        if (burstLeft > 0)
+        {
+            Time.captureFramerate = 20;
+            Time.timeScale = 1f;
+            ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "gif_" + burstName, (66 - burstLeft).ToString("000") + ".png"));
+            burstLeft--;
+            if (burstLeft == 0) Time.captureFramerate = 0;
+            return true;
+        }
+        return false;
+    }
+
+    void BurstTriggers(int s)
+    {
+        if (G.State != Game.GameState.Sailing || HUD.I.ModalOpen) return;
+        var foe = G.CurrentEnemy;
+        float fd = foe != null ? Vector3.Distance(foe.Planar, G.Player.Planar) : 9999f;
+        bool era = EraShift.I.Active;
+        float fog = SkyController.I.FogMul;
+        bool onFoot = Shore.I != null && Shore.I.OnFoot;
+        if (onFoot) return;
+        if (G.Chapter == 2)
+        {
+            if (s == 2 && fog > 4f && era) Burst("fog_beacons");
+            if (s == 4 && Stealth.I != null && Stealth.I.Active && stepTime > 30f) Burst("stealth");
+            if (s == 6 && G.CombatEnabled && fd < 110f) Burst("flagship");
+        }
+        else if (G.Chapter == 3)
+        {
+            if (s == 2 && stepTime > 35f) Burst("canal");
+            if (s == 4 && stepTime > 25f) Burst("pharos_night");
+            if (s == 5 && G.CombatEnabled && fd < 120f) Burst("escape");
+        }
+        else if (G.Chapter == 4)
+        {
+            if (s == 2 && stepTime > 14f && fog < 1.3f) Burst("fleet", 155f, 9f, 42f);
+            if (s == 2 && fog > 3.5f && era) Burst("storm_wall");
+            if (s == 3 && !string.IsNullOrEmpty(HUD.I.Reading) && era) Burst("archive");
+            if (s == 4 && G.CombatEnabled && fd < 170f) Burst("last_map", 40f, 14f, 46f);
+        }
+    }
     string shotDir, logPath;
     int lastStep = -2;
     float stepTime, shotTimer, realStart;
@@ -32,6 +97,7 @@ public class Autoplay : MonoBehaviour
         var args = System.Environment.GetCommandLineArgs();
         tutorial = System.Array.IndexOf(args, "-tutorial") >= 0;
         landTest = System.Array.IndexOf(args, "-landtest") >= 0;
+        gifs = System.Array.IndexOf(args, "-gifs") >= 0;
         int si = System.Array.IndexOf(args, "-shots");
         shotDir = si >= 0 && si + 1 < args.Length ? args[si + 1] : Path.Combine(Application.persistentDataPath, "autoplay");
         Directory.CreateDirectory(shotDir);
@@ -68,6 +134,7 @@ public class Autoplay : MonoBehaviour
     {
         if (G == null || ended) return;
         Time.timeScale = HUD.I.MarketOpen ? 1f : (G.State == Game.GameState.Sailing ? 2.5f : 2f);
+        BurstTick();
 
         if (HUD.I.GameOverOpen)
         {
@@ -90,6 +157,7 @@ public class Autoplay : MonoBehaviour
             stepTime = 0;
         }
         stepTime += Time.deltaTime;
+        BurstTriggers(s);
         var lim = G.Chapter == 4 ? limits4 : G.Chapter == 3 ? limits3 : G.Chapter == 2 ? limits2 : limits;
         if (s >= 0 && s < lim.Length && stepTime > lim[s] && G.State == Game.GameState.Sailing)
         {
@@ -163,6 +231,7 @@ public class Autoplay : MonoBehaviour
     {
         float t = 0;
         var sh = Shore.I;
+        if (what == "tavern") { burstDone.Remove("x"); if (gifs && !burstDone.Contains("ashore")) { burstDone.Add("ashore"); burstName = "ashore"; Directory.CreateDirectory(Path.Combine(shotDir, "gif_ashore")); burstWait = 12; } }
         while (sh.OnFoot && t < 90f)
         {
             Vector3 d = site.Pos - sh.Pos; d.y = 0;
@@ -218,6 +287,7 @@ public class Autoplay : MonoBehaviour
             if (!ok || G.Player.MaxHP < 119f) issues.Add("LAND: hull upgrade did not apply");
             yield return new WaitForSecondsRealtime(0.8f);
             Shot("ledger_ship_bought");
+            yield return new WaitForSecondsRealtime(0.4f);
             Ledger.I.Close();
         }
         var tav = FindSite(Site.Kind.Tavern);
@@ -236,6 +306,7 @@ public class Autoplay : MonoBehaviour
             if (!hired) issues.Add("LAND: could not hire crew");
             yield return new WaitForSecondsRealtime(0.8f);
             Shot("ledger_crew_hired");
+            yield return new WaitForSecondsRealtime(0.4f);
             Ledger.I.Close();
         }
         var ins = FindSite(Site.Kind.Inscription);
@@ -255,6 +326,7 @@ public class Autoplay : MonoBehaviour
             if (!learned) issues.Add("LAND: could not learn a skill");
             yield return new WaitForSecondsRealtime(0.8f);
             Shot("ledger_skills");
+            yield return new WaitForSecondsRealtime(0.4f);
             Ledger.I.Close();
         }
         yield return new WaitForSecondsRealtime(0.5f);
